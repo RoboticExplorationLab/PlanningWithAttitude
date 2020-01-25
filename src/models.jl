@@ -43,7 +43,7 @@ Base.position(::Satellite, x::SVector) = @SVector zeros(3)
 
 function dynamics(model::Satellite, x::SVector, u::SVector)
     ω = @SVector [x[1], x[2], x[3]]
-    q = @SVector [x[4], x[5], x[6], x[7]]
+    q = normalize(@SVector [x[4], x[5], x[6], x[7]])
     J = model.J
 
     ωdot = J\(u - ω × (J*ω))

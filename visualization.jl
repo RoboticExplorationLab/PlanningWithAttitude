@@ -3,6 +3,17 @@ using MeshCat
 using GeometryTypes
 using CoordinateTransformations
 using FileIO
+using Plots
+
+function Plots.plot(X::Vector{SVector{N,Float64}}, inds=1:N; kwargs...) where N
+    A = Array(hcat(X...))[inds,:]
+    plot(A'; kwargs...)
+end
+
+function Plots.plot!(X::Vector{SVector{N,Float64}}, inds=1:N; kwargs...) where N
+    A = Array(hcat(X...))[inds,:]
+    plot!(A'; kwargs...)
+end
 
 function visualize!(vis, model::AbstractModel, Z::Traj)
     X = states(Z)
