@@ -2,9 +2,11 @@ export
     KnotPoint,
     Traj,
     state,
-    control
+    control,
+    set_states!,
+    set_controls!
 
-""" 
+"""
 Stores critical information corresponding to each knot point in the trajectory optimization
 problem, including the state and control values, as well as the time and time step length.
 

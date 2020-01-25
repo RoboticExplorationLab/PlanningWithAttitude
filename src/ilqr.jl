@@ -6,6 +6,9 @@ export
 #                                   SOLVE
 ############################################################################################
 function solve!(solver::iLQRSolver)
+    set_verbosity!(solver.opts)
+    clear_cache!(solver.opts)
+
     solver.stats.iterations = 0
     solver.ρ[1] = solver.opts.bp_reg_initial
     solver.dρ[1] = 0.0
@@ -56,14 +59,14 @@ function record_iteration!(solver::iLQRSolver, J, dJ)
     solver.stats.dJ[i] = dJ
     # solver.stats.gradient[i] = mean(solver.grad)
 
-    # @logmsg InnerLoop :iter value=i
-    # @logmsg InnerLoop :cost value=J
-    # @logmsg InnerLoop :dJ   value=dJ
-    # @logmsg InnerLoop :grad value=solver.stats.gradient[i]
+    @logmsg InnerLoop :iter value=i
+    @logmsg InnerLoop :cost value=J
+    @logmsg InnerLoop :dJ   value=dJ
+    @logmsg InnerLoop :grad value=solver.stats.gradient[i]
     # @logmsg InnerLoop :zero_count value=solver.stats[:dJ_zero_counter][end]
-    # if solver.opts.verbose
-    #     print_level(InnerLoop)
-    # end
+    if solver.opts.verbose
+        print_level(InnerLoop)
+    end
     return nothing
 end
 
@@ -90,9 +93,9 @@ function evaluate_convergence(solver::iLQRSolver)
     end
 
     # Check for gradient convergence
-    if solver.stats.gradient[i] < solver.opts.gradient_norm_tolerance
-        return true
-    end
+    # if solver.stats.gradient[i] < solver.opts.gradient_norm_tolerance
+    #     return true
+    # end
 
     # Check total iterations
     if i >= solver.opts.iterations
@@ -268,6 +271,7 @@ function forwardpass!(solver::iLQRSolver, ΔV, J_prev)
             α = 0.0
             expected = 0.0
 
+			@logmsg InnerLoop "Linesearch max iter(reg up)"
             regularization_update!(solver, :increase)
             solver.ρ[1] += solver.opts.bp_reg_fp
             break
@@ -305,10 +309,10 @@ function forwardpass!(solver::iLQRSolver, ΔV, J_prev)
         error("Error: Cost increased during Forward Pass")
     end
 
-    # @logmsg InnerLoop :expected value=expected
-    # @logmsg InnerLoop :z value=z
-    # @logmsg InnerLoop :α value=2*α
-    # @logmsg InnerLoop :ρ value=solver.ρ[1]
+    @logmsg InnerLoop :expected value=expected
+    @logmsg InnerLoop :z value=z
+    @logmsg InnerLoop :α value=2*α
+    @logmsg InnerLoop :ρ value=solver.ρ[1]
 
     return J
 end

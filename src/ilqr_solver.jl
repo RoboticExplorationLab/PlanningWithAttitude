@@ -96,6 +96,8 @@ end
 
     "maximum control value, evaluated during rollout, if exceded solve will error."
     max_control_value::T = 1.0e8
+
+    log_level::Base.CoreLogging.LogLevel = InnerLoop
 end
 
 struct iLQRSolver{L,C,n,m,nm}
@@ -121,6 +123,8 @@ struct iLQRSolver{L,C,n,m,nm}
 
     ρ::Vector{Float64}
     dρ::Vector{Float64}
+
+    logger::SolverLogger
 end
 
 function iLQRSolver(model::L, obj::Objective, x0, tf::Real, N::Int;
@@ -128,13 +132,15 @@ function iLQRSolver(model::L, obj::Objective, x0, tf::Real, N::Int;
     n,m = size(model)
     dt = tf/(N-1)
     stats = iLQRStats()
+    reset!(stats, opts.iterations)
     Z = Traj(n,m,dt,N)
     Z̄ = Traj(n,m,dt,N)
     K = [zeros(m,n) for k = 1:N-1]
     d = [@SVector zeros(m) for k = 1:N-1]
     ρ  = [0.]
     dρ = [0.]
-    return iLQRSolver(model, obj, x0, tf, N, opts, stats, Z, Z̄, K, d, ρ, dρ)
+    logger = default_logger(opts.verbose)
+    return iLQRSolver(model, obj, x0, tf, N, opts, stats, Z, Z̄, K, d, ρ, dρ, logger)
 end
 
 Base.size(solver::iLQRSolver{L,C,n,m}) where {L,C,n,m} = n,m,solver.N
