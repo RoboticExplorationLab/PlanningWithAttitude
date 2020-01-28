@@ -1,0 +1,18 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, enlargelimits={0.15}, x={1.1cm}, legend style={at={(0.5,-0.15)
+}, anchor={north}, legend columns={-1}}, symbolic x coords={Exp,Cay,dMRP,Vec,Quat,RP,MRP,RPY}, xtick={data}, nodes near coords, nodes near coords align={vertical}, error bars/y dir=both, error bars/y explicit]
+    \addplot
+        coordinates {
+            (Exp,0.374117594047619) +- (0,0.007885909367680218)
+            (Cay,0.14896062857142855) +- (0,0.0034020892427994442)
+            (dMRP,0.14855463) +- (0,0.0024290595062912944)
+            (Vec,0.14345336625) +- (0,0.007823742999454476)
+            (Quat,0.1822917083333333) +- (0,0.007830862423102419)
+            (RP,0.1419583) +- (0,0.0019437496145180576)
+            (MRP,0.1490564651785714) +- (0,0.0069432342939453225)
+            (RPY,0.16607390625000001) +- (0,0.004782084383882967)
+        }
+        ;
+    \legend{{time per iteration (ms)}}
+\end{axis}
+\end{tikzpicture}
