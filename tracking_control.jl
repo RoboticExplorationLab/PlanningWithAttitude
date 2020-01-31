@@ -1,7 +1,11 @@
 
 abstract type AbstractController end
+abstract type LQRController <: AbstractController end
+abstract type TimeVaryingController <: AbstractController end
 
-struct TVLQR{L,N,M,TK} <: AbstractController
+import TrajectoryOptimization: state_diff, state_diff_jacobian
+
+struct TVLQR{L,N,M,TK} <: TimeVaryingController
     Xref::Vector{SVector{N,Float64}}
     K::Vector{TK}
     d::Vector{SVector{M,Float64}}
@@ -18,7 +22,7 @@ function get_k(cntrl::TVLQR, t)
     findsortedlast(cntrl.t,t)
 end
 
-struct LQR{T,N,M,TK} <: AbstractController
+struct LQR{T,N,M,TK} <: LQRController
     K::TK
     xref::SVector{N,T}
     uref::SVector{M,T}
@@ -37,6 +41,37 @@ function get_control(cntrl::LQR, x, t)
     dx = x - cntrl.xref
     return cntrl.K*dx + cntrl.uref
 end
+
+struct MLQR{T,N,M,TK} <: LQRController
+    model::AbstractModel
+    K::TK
+    xref::SVector{N,T}
+    uref::SVector{M,T}
+end
+
+function MLQR(model::AbstractModel, xeq, ueq, dt::Real, Q, R)
+    # Linearize the model, accounting for attitude state
+    A,B = linearize(model, xeq, ueq, dt)
+    G1 = state_diff_jacobian(model, xeq)
+    G2 = state_diff_jacobian(model, discrete_dynamics(RK3, model, xeq, ueq, 0.0, dt))
+    A = G2'A*G1
+    B = G2'B
+
+    # Calculate the optimal control gain
+    @assert size(Q) == size(A)
+    K = calc_LQR_gain(A,B,Q,R)
+    MLQR(model,K,xeq,ueq)
+end
+
+function get_control(cntrl::MLQR, x, t)
+    dx = state_diff(cntrl.model, x, cntrl.xref)
+    return cntrl.K*dx + cntrl.uref
+end
+
+
+
+############################################################################################
+############################################################################################
 
 function linearize(model::AbstractModel, xeq, ueq, dt)
     # Linearize the system about the given point
@@ -79,7 +114,7 @@ function simulate(model::AbstractModel, cntrl, x0, tf; dt=1e-4)
         u = get_control(cntrl, x, t)
 
         # Add disturbances
-        u += randn(m)*1e-0
+        u += randn(m)*1e-1
 
         # Simulate the system forward
         x = discrete_dynamics(RK3, model, x, u, t, dt)
