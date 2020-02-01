@@ -4,16 +4,19 @@ using StaticArrays
 using LinearAlgebra
 using Parameters
 using ForwardDiff
-using Logging
-using Formatting
+# using Logging
+# using Formatting
 
-include("logger.jl")
-include("knotpoint.jl")
-include("models.jl")
-include("quaternions.jl")
-include("objective.jl")
-include("ilqr_solver.jl")
-include("ilqr.jl")
-include("attitude_costs.jl")
+# include("logger.jl")
+# include("knotpoint.jl")
+# include("models.jl")
+# include("quaternions.jl")
+# include("objective.jl")
+# include("ilqr_solver.jl")
+# include("ilqr.jl")
+# include("attitude_costs.jl")
 
+include("runtests.jl")
+include("plotting.jl")
+include("rbstate.jl")
 end

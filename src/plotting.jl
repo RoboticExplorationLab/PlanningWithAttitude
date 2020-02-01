@@ -4,8 +4,11 @@ using Plots
 using TrajOptPlots
 using MeshCat
 
-function rot_type(solver)
-    Rot = Dynamics.rotation_type(solver.model)
+function rot_type(solver::TrajectoryOptimization.AbstractSolver)
+    rot_type(Dynamics.rotation_type(get_model(solver)))
+end
+
+function rot_type(Rot)
     if Rot <: UnitQuaternion
         return Symbol(retraction_map(Rot))
     elseif Rot <: MRP
@@ -18,13 +21,20 @@ function rot_type(solver)
 end
 
 function cost_type(solver)
-    costfun = typeof(solver.obj[1])
+    obj = TO.get_objective(solver)
+    if obj isa TrajectoryOptimization.ALObjective
+        costfun = typeof(obj.obj[1])
+    else
+        costfun = typeof(obj[1])
+    end
     if costfun <: QuadraticCost
         return :Quadratic
     elseif costfun <: SatDiffCost
         return :SatDiff
     elseif costfun <: QuadraticQuatCost
         return :QuatLQR
+    elseif costfun <: ErrorQuadratic
+        return :ErrorQuadratic
     end
 end
 
@@ -39,6 +49,12 @@ function short_names(s::Symbol)
         :Vec
     elseif s == :IdentityMap
         :Quat
+    elseif s == :ReNorm
+        :Norm
+    elseif s == :NormCon
+        :Con
+    elseif s == :QuatSlack
+        :Slack
     else
         s
     end
