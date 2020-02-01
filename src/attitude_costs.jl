@@ -23,14 +23,21 @@ function stage_cost(cost::SatCost, x::SVector, u::SVector)
     J = 0.5*(ω'cost.Q*ω + u'cost.R*u) + cost.q'ω + cost.c
     d = cost.q0'q
     if d ≥ 0
-        J += 1-d
+        J += cost.Qq*(1-d)
     else
-        J += 1+d
+        J += cost.Qq*(1+d)
     end
     return J
 end
 
 function cost_gradient(solver::iLQRSolver, cost::SatCost, z::KnotPoint)
+    if is_terminal(z)
+        dt_x = 1.0
+        dt_u = 0.0
+    else
+        dt_x = z.dt
+        dt_u = z.dt
+    end
     Q = cost.Q
     u = control(z)
     ω = @SVector [z.z[1], z.z[2], z.z[3]]
@@ -38,25 +45,28 @@ function cost_gradient(solver::iLQRSolver, cost::SatCost, z::KnotPoint)
     d = cost.q0'q
     Qω = Q*ω + cost.q
     if d ≥ 0
-        Qq = -cost.q0'Lmult(q)*Vmat()'
+        Qq = -cost.Qq*cost.q0'Lmult(q)*Vmat()'
     else
-        Qq =  cost.q0'Lmult(q)*Vmat()'
+        Qq =  cost.Qq*cost.q0'Lmult(q)*Vmat()'
     end
     Qx = [Qω; Qq']
     Qu = cost.R*u
-    return Qx, Qu
+    return Qx*dt_x, Qu*dt_u
 end
 
 function cost_hessian(solver::iLQRSolver, cost::SatCost, z::KnotPoint{T,N,M}) where {T,N,M}
+    if is_terminal(z)
+        dt_x = 1.0
+        dt_u = 0.0
+    else
+        dt_x = z.dt
+        dt_u = z.dt
+    end
     Q = cost.Q
     q = @SVector [z.z[4], z.z[5], z.z[6], z.z[7]]
     q0 = cost.q0
     Qxx = Diagonal(@SVector [Q[1,1], Q[2,2], Q[3,3], 0,0,0])
-    mycost(q::SVector{4}) = min(1-q0'q, 1+q0'q)
-    mycost(g::SVector{3}) = mycost(Lmult(q)*cayley_map(g))
-    g = @SVector zeros(3)
-    Qqq = ForwardDiff.hessian(mycost, g)
-    d = q0'q
+    d = q0'q*cost.Qq
     if d ≤ 0
         d *= -1
     end
@@ -71,5 +81,40 @@ function cost_hessian(solver::iLQRSolver, cost::SatCost, z::KnotPoint{T,N,M}) wh
     ]
     Quu = cost.R
     Qux = @SMatrix zeros(M,N-1)
-    return Qxx, Quu, Qux
+    return Qxx*dt_x, Quu*dt_x, Qux*dt_u
+end
+
+function cost_expansion(cost::SatCost, model::Satellite, z::KnotPoint{T,N,M}, G) where {T,N,M}
+    Q = cost.Q
+    q0 = cost.q0
+    u = control(z)
+    ω = @SVector [z.z[1], z.z[2], z.z[3]]
+    q = @SVector [z.z[4], z.z[5], z.z[6], z.z[7]]
+    d = cost.q0'q
+    Qω = Q*ω + cost.q
+    if d ≥ 0
+        Qq = -cost.Qq*cost.q0'Lmult(q)*Vmat()'
+    else
+        Qq =  cost.Qq*cost.q0'Lmult(q)*Vmat()'
+    end
+    Qx = [Qω; Qq']
+    Qu = cost.R*u
+
+    Qxx = Diagonal(@SVector [Q[1,1], Q[2,2], Q[3,3], 0,0,0])
+    d = q0'q*cost.Qq
+    if d ≤ 0
+        d *= -1
+    end
+    Qqq = I(3)*d
+    Qxx = @SMatrix [
+        Q[1,1] 0 0 0 0 0;
+        0 Q[2,2] 0 0 0 0;
+        0 0 Q[3,3] 0 0 0;
+        0 0 0 Qqq[1] Qqq[4] Qqq[7];
+        0 0 0 Qqq[2] Qqq[5] Qqq[8];
+        0 0 0 Qqq[3] Qqq[6] Qqq[9];
+    ]
+    Quu = cost.R
+    Qux = @SMatrix zeros(M,N-1)
+    return Qxx, Quu, Qux, Qx, Qu
 end

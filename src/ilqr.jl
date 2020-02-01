@@ -121,7 +121,7 @@ function dynamics_jacobian(solver::iLQRSolver, z::KnotPoint{T,N,M,NM}) where {T,
 	x,u,dt = state(z), control(z), z.dt
 	G1 = state_diff_jacobian(model, x)
 	G2 = state_diff_jacobian(model, discrete_dynamics(model, x, u, dt))
-	A = G2'∇f[ix,ix]*G2
+	A = G2'∇f[ix,ix]*G1
 	B = G2'∇f[ix,iu]
 	return A,B
 end

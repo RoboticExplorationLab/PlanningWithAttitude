@@ -151,3 +151,5 @@ end
 
 @inline states(solver::iLQRSolver) = state.(solver.Z)
 @inline controls(solver::iLQRSolver) = control.(solver.Z)
+
+cost(solver::iLQRSolver) = cost(solver.obj, solver.Z)

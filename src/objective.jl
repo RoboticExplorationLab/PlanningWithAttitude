@@ -11,7 +11,8 @@ struct Objective{C<:CostFunction}
     J::Vector{Float64}
 end
 
-function Objective(costs::Vector{<:CostFunction}, N::Int)
+function Objective(costs::Vector{<:CostFunction})
+    N = length(costs)
     return Objective(costs, zeros(N))
 end
 
