@@ -1,8 +1,28 @@
+export
+    rot_type,
+    cost_type,
+    short_names,
+    bar_comparison
 
 using PGFPlotsX
 using Plots
 using TrajOptPlots
 using MeshCat
+using CoordinateTransformations
+
+function TrajOptPlots.visualize!(vis, X::Vector{<:RBState}, tf)
+    fps = Int(floor(length(X)/tf))
+    anim = MeshCat.Animation(fps)
+    for k in eachindex(X)
+        atframe(anim, k) do
+            x = X[k].r
+            q = X[k].q
+            settransform!(vis["robot"], compose(Translation(x), LinearMap(Quat(q))))
+        end
+    end
+    setanimation!(vis, anim)
+    return anim
+end
 
 function rot_type(solver::TrajectoryOptimization.AbstractSolver)
     rot_type(Dynamics.rotation_type(get_model(solver)))
@@ -11,12 +31,16 @@ end
 function rot_type(Rot)
     if Rot <: UnitQuaternion
         return Symbol(retraction_map(Rot))
+    elseif Rot <: TrajectoryOptimization.DifferentialRotation
+        return Symbol(Rot)
     elseif Rot <: MRP
         return :MRP
     elseif Rot <: RodriguesParam
         return :RP
     elseif Rot <: RPY
         return :RPY
+    elseif Rot == SE3Tracking
+        return :SE3
     end
 end
 

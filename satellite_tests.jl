@@ -27,6 +27,8 @@ if !isdefined(Main,:vis)
     set_mesh!(vis, model)
 end
 
+angwrap(x) = min(x,360-x)
+
 function final_angle_error(solver)
     q = Dynamics.orientation(solver.model, state(solver.Z[end]))
     qf = Dynamics.orientation(solver.model, solver.xf)
@@ -45,45 +47,6 @@ function total_angle(solver)
     return rad2deg(θ)
 end
 
-function rot_type(solver)
-    Rot = Dynamics.rotation_type(solver.model)
-    if Rot <: UnitQuaternion
-        return Symbol(retraction_map(Rot))
-    elseif Rot <: MRP
-        return :MRP
-    elseif Rot <: RodriguesParam
-        return :RP
-    elseif Rot <: RPY
-        return :RPY
-    end
-end
-
-function cost_type(solver)
-    costfun = typeof(solver.obj[1])
-    if costfun <: QuadraticCost
-        return :Quadratic
-    elseif costfun <: SatDiffCost
-        return :SatDiff
-    elseif costfun <: QuadraticQuatCost
-        return :QuatLQR
-    end
-end
-
-function short_names(s::Symbol)
-    if s == :ExponentialMap
-        :Exp
-    elseif s == :CayleyMap
-        :Cay
-    elseif s == :MRPMap
-        :dMRP
-    elseif s == :VectorPart
-        :Vec
-    elseif s == :IdentityMap
-        :Quat
-    else
-        s
-    end
-end
 
 function gen_sat_prob(Rot=UnitQuaternion{Float64,CayleyMap};
         ang=deg2rad(90), cost=:QuatLQR, use_rot=true)
@@ -134,38 +97,42 @@ function gen_sat_prob(Rot=UnitQuaternion{Float64,CayleyMap};
     return solver
 end
 
-solver = gen_sat_prob(UnitQuaternion{Float64,CayleyMap}, cost=:QuatLQR,
-    use_rot=true, ang=deg2rad(270))
+solver = gen_sat_prob(MRP{Float64}, cost=:SatDiff,
+    use_rot=false, ang=deg2rad(90))
 solve!(solver)
 visualize!(vis, solver.model, solver.Z)
 solver.stats.iterations
 final_angle_error(solver)
-qf = Dynamics.orientation(solver.model, solver.xf)
-q = Dynamics.orientation(solver.model, state(solver.Z[N]))
-logm(qf\q)
-dq = qf\q
-2*atan(TO.vecnorm(dq),dq.s)
-
-
 total_angle(solver)
 
-atand(sind(270), cosd(270))
 
-data2 = Dict{Symbol,Any}(:ang=>Float64[], :cost=>Symbol[], :rotation=>Symbol[],
-    :time=>Float64[], :iterations=>Int[], :ang_err=>Float64[], :ang_total=>Float64[])
-run_set!(data2, UnitQuaternion{Float64, CayleyMap}, deg2rad(270), cost=:SatDiff)
+data
 
-# Run Benchmarks
-function time_solve(solver; samples=10, evals=10)
-    U0 = deepcopy(controls(solver))
-    solver.opts.verbose = false
-    b = @benchmark begin
-        initial_controls!($solver,$U0)
-        solve!($solver)
-    end samples=samples evals=evals
-    return b
+function test_representation(Rot, costfun)
+    data = Dict{Symbol,Vector}(:ang_err=>Float64[], :ang_total_err=>Float64[], :iterations=>Int64[], :success=>Bool[])
+    for ang in [90,180,270]
+        ang_true = angwrap(ang)
+        use_rot = Rot <: UnitQuaternion
+        solver = gen_sat_prob(Rot, cost=costfun, use_rot=false, ang=deg2rad(ang))
+        solve!(solver)
+        push!(data[:ang_err], final_angle_error(solver))
+        total_ang = total_angle(solver)
+        push!(data[:ang_total_err], abs(total_ang - ang_true))
+        push!(data[:iterations], solver.stats.iterations)
+        push!(data[:success], data[:ang_total_err][end] < 20 && data[:ang_err][end] < 2.0)
+    end
+    return data
 end
 
+data = test_representation(UnitQuaternion{Float64,VectorPart}, :Quadratic)
+DataFrame(data)
+
+data = Dict{Symbol,Any}(:ang=>Float64[], :cost=>Symbol[], :rotation=>Symbol[],
+    :time=>Float64[], :iterations=>Int[], :ang_err=>Float64[], :ang_total=>Float64[])
+run_set!(data, UnitQuaternion{Float64, ExponentialMap}, deg2rad(-90), cost=:SatDiff)
+data
+
+# Run Benchmarks
 function log_solve!(data, solver, ang, func=median)
    # Run info
    push!(data[:ang], rad2deg(ang))
@@ -236,11 +203,14 @@ end
 data = run_sim(data, deg2rad(270), :SatDiff)
 @save "sat.jld" data
 
+run_sim(data, deg2rad(270), :QuatLQR, [:quats])
+data
+
 # Add some calculated values
 df = DataFrame(data)
-angwrap(x) = min(x,360-x)
 df.ang_total_true = angwrap.(df.ang)
 df.ang_err_total = @. abs(df.ang_total_true - df.ang_total)
+df.angle = @. string(Int(df.ang))
 
 total_ang_tol = 15
 err_tol = 2
@@ -253,14 +223,14 @@ percentage(x) = count(x) / length(x)
 
 
 # Generate plots
-df90 = df[df.ang .≈ 90, :]
-df270 = df[df.ang .≈ 270, :]
-df180 = df[df.ang .≈ 180, :]
+df90 = df[(df.ang .≈ 90) .& (df.cost .!= :QuatLQR), :]
+df270 = df[(df.ang .≈ 180) .& (df.cost .!= :QuatLQR), :]
+df180 = df[(df.ang .≈ 270) .& (df.cost .!= :QuatLQR), :]
 df270[df270.rots .== :Cay,:].ang_err
+
 
 df_angs = (df90, df180, df270);
 rotations = string.(unique(t.rots))
-
 
 function bar_comparison(labels, data; err=zero(data), name="")
     coords = Coordinates(labels, data, yerror=err)
@@ -346,7 +316,7 @@ pgfsave("figs/sat_iterations.tikz", p, include_preamble=false)
 
 
 ############################################################################################
-# PLOT 4: Success rate
+# PLOT 3: Success rate
 #       y-bar chart with an entry for each rotation type
 #       success rate for each of the angles, and one cumulative
 ############################################################################################
@@ -354,6 +324,24 @@ pgfsave("figs/sat_iterations.tikz", p, include_preamble=false)
 succ = map(df_angs) do df
     by(df, :rots, :success => percentage)
 end
+
+
+succ = map(df_angs) do df
+    by(df, :rots, :ang_err => median)
+end
+
+succ = map(df_angs) do df
+    by(df, :rots, :ang_err_total => median)
+end
+
+
+
+
+
+
+
+
+
 
 coords = map(1:3) do k
     Coordinates(rotations, succ[k].success_percentage)

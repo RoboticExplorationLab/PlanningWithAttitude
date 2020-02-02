@@ -1,3 +1,6 @@
+export
+    RBState,
+    randbetween
 
 struct RBState{T}
     r::SVector{3,T}
@@ -27,6 +30,10 @@ function RBState(model::RigidBody, x::SVector)
     RBState(r,UnitQuaternion(q),v,ω)
 end
 
+function RBState(model::RigidBody, Z::Traj)
+    [RBState(model, state(z)) for z in Z]
+end
+
 function Dynamics.build_state(model::RigidBody{R}, rbs::RBState) where R
     Dynamics.build_state(model, rbs.r, rbs.q, rbs.v, rbs.ω)
 end
@@ -37,6 +44,15 @@ end
 
 function Base.:-(s1::RBState, s2::RBState)
     RBState(s1.r-s2.r, s2.q\s1.q, s1.v-s2.v, s1.ω-s2.ω)
+end
+
+function TrajectoryOptimization.:⊖(s1::RBState, s2::RBState, rmap=ExponentialMap)
+    dx = s1.r-s2.r
+    dq = rmap(s2.q\s1.q)
+    dv = s1.v-s2.v
+    dw = s1.ω-s2.ω
+    @SVector [dx[1], dx[2], dx[3], dq[1], dq[2], dq[3],
+              dv[1], dv[2], dv[3], dw[1], dw[2], dw[3]]
 end
 
 
@@ -59,4 +75,27 @@ end
 
 function LinearAlgebra.norm(s::RBState)
     sqrt(s.r's.r + s.v's.v + s.ω's.ω + LinearAlgebra.norm2(s.q))
+end
+
+function TrajectoryOptimization.Traj(model::RigidBody,
+        X::Vector{<:RBState}, U::Vector{<:AbstractVector}, dt)
+    N = length(X)
+    equal = N == length(U)
+    map(1:length(X)) do k
+        x = Dynamics.build_state(model, X[k])
+        if k == N
+            if equal
+                u = U[k]
+            else
+                try
+                    u = Dynamics.trim_controls(model)
+                catch
+                    u = zeros(model)[2]
+                end
+            end
+        else
+            u = U[k]
+        end
+        KnotPoint(x,u,dt,dt*(k-1))
+    end
 end
