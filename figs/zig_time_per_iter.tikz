@@ -1,16 +1,16 @@
 \begin{tikzpicture}
-\begin{axis}[ybar, ylabel={time per iteration (ms)}, enlargelimits={0.15}, x={0.9cm}, legend style={at={(0.5,-0.15)
+\begin{axis}[ybar, ylabel={time per iteration (ms)}, enlargelimits={0.15}, legend style={at={(0.5,-0.15)
 }, anchor={north}, legend columns={-1}}, symbolic x coords={Quat,RP,MRP,RPY,Exp,Cay,dMRP,Vec}, xtick={data}, nodes near coords, nodes near coords align={vertical}]
     \addplot
         coordinates {
-            (Quat,1.2655613749999999)
-            (RP,0.8524727692307692)
-            (MRP,0.9614696923076923)
-            (RPY,0.9877515294117646)
-            (Exp,1.0886281428571427)
-            (Cay,1.101481846153846)
-            (dMRP,1.0779202173913043)
-            (Vec,1.0200960909090908)
+            (Quat,0.8689811249999999)
+            (RP,0.6173211538461538)
+            (MRP,0.7181771538461538)
+            (RPY,0.7512202352941175)
+            (Exp,0.7578431666666666)
+            (Cay,0.8227334583333333)
+            (dMRP,0.7828347173913043)
+            (Vec,0.752424125)
         }
         ;
 \end{axis}

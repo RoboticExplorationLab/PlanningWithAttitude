@@ -1,0 +1,17 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, ylabel={solve time (ms)}, enlarge x limits={0.1}, legend style={at={(0.5,-0.12)
+}, anchor={north}, legend columns={-1}}, symbolic x coords={Quat,RP,MRP,RPY,Exp,Cay,dMRP,Vec}, xtick={data}, nodes near coords, nodes near coords align={vertical}, every node near coord/.append style={/pgf/number format/.cd, fixed,precision=1}]
+    \addplot
+        coordinates {
+            (Quat,10.427773499999999)
+            (RP,8.025174999999999)
+            (MRP,9.336303)
+            (RPY,12.770743999999999)
+            (Exp,9.094118)
+            (Cay,9.8728015)
+            (dMRP,18.0051985)
+            (Vec,9.0290895)
+        }
+        ;
+\end{axis}
+\end{tikzpicture}

@@ -1,0 +1,17 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, ylabel={solve time (ms)}, legend style={at={(0.5,-0.07)
+}, anchor={north}, legend columns={-1}}, symbolic x coords={Quat,Norm,Con,Slack,Exp,Cay,dMRP,Vec}, xtick={data}, nodes near coords, nodes near coords align={vertical}]
+    \addplot
+        coordinates {
+            (Quat,14.044331)
+            (Norm,14.308539)
+            (Con,253.74820799999998)
+            (Slack,29.502329)
+            (Exp,12.566037)
+            (Cay,15.363399)
+            (dMRP,14.385743)
+            (Vec,11.471867999999999)
+        }
+        ;
+\end{axis}
+\end{tikzpicture}
