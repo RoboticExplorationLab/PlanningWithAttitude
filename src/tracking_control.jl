@@ -1,9 +1,11 @@
 export
+    get_control,
     TVLQR,
     LQR,
     MLQR,
     simulate,
     SE3Tracking,
+    HFCA,
     test_ICs
 
 import TrajectoryOptimization.Dynamics: trim_controls, build_state
@@ -200,6 +202,87 @@ function get_control(c::SE3Tracking, x, t)
 end
 
 
+""" Hopf Fibration control
+"""
+struct HFCA{N,T} <: TrackingController
+    model::AbstractModel
+    kx::T
+    kv::T
+    kR::Diagonal{T,SVector{3,T}}
+    kΩ::Diagonal{T,SVector{3,T}}
+    Xref::Vector{SVector{N,T}}
+    Xdref::Vector{SVector{N,T}}
+    bref::Vector{SVector{3,T}}
+    t::Vector{T}
+end
+
+function HFCA(model::AbstractModel, Xref, Xdref, bref, t;
+        # kx=59.08, kv=24.3, kR=8.81, kO=1.54)
+        kx=11.7, kv=4.0,
+        kR=3.0*Diagonal(@SVector ones(3)),
+        kO=0.7*Diagonal(@SVector ones(3)))
+    HFCA(model, kx, kv, kR, kO, Xref, Xdref, bref, t)
+end
+
+get_times(c::HFCA) = c.t
+
+function get_control(c::HFCA, x, t)
+    # Get model params
+    g = c.model.gravity[3]
+    e3 = @SVector [0,0,1.]
+    mass = c.model.mass
+    J = c.model.J
+
+    # Get time step
+    k = get_k(c, t)
+    b1d = c.bref[k]
+    xd = c.Xref[k]
+    xdd = c.Xdref[k]
+
+    # Parse the state
+    r,q,v,Ω = Dynamics.parse_state(c.model, x)
+    rd,qd,vd,Ωd = Dynamics.parse_state(c.model, xd)
+    rdd,qdd,vdd,Ωdd = Dynamics.parse_state(c.model, xdd)
+    R = rotmat(q)
+
+    # Calculate the linear errors
+    ex = r-rd
+    ev = v-vd
+    xdd = rdd
+    Ωdotd = Ωdd
+
+    # Get the desired heading
+    ψ0 = atan(c.bref[1][2], c.bref[1][1])
+    ψ = atan(b1d[2], b1d[1]) - ψ0
+
+    # Calculate desired angular velocities and quaternion
+    ζ = -c.kx*ex - c.kv*ev + mass*rdd - mass*g*e3  # eq (26)
+    ζdot = -c.kx*ev + vdd  # is this right?
+    abc = normalize(ζ)  # eq (19)
+    abc_dot = (ζ'ζ*I - ζ*ζ')*ζdot/(norm(ζ)^3)  # eq (20)
+    ψdot = -(abc[2]*abc_dot[1] - abc[1]*abc_dot[2])/(1+abc[3])
+    ω = (@SVector [
+        sin(ψ)*abc_dot[1] - cos(ψ)*abc_dot[2] - (abc[1]*sin(ψ) - abc[2]*cos(ψ)),
+        cos(ψ)*abc_dot[1] + sin(ψ)*abc_dot[2] - (abc[1]*cos(ψ) + abc[2]*sin(ψ)),
+        0
+    ]) * (abc_dot[3]/(abc[3] + 1))
+    q_abc = @SVector [1+abc[3], -abc[2], abc[1], 0]
+    q_ψ = @SVector [cos(ψ/2), 0, 0, sin(ψ/2)]
+    qd = Lmult(q_abc)*q_ψ
+    Rd = rotmat(UnitQuaternion(qd))
+
+    # Calculate angular errors
+    eΩ = Ω - R'Rd*Ωd
+    eR = 0.5*vee(Rd'R - R'Rd)
+
+    # Calculate controls
+    f = -ζ'R*e3
+    M = -c.kR*eR - c.kΩ*eΩ
+
+    # Convert to motor thrusts
+    C = Dynamics.forceMatrix(c.model)
+    u = C\(@SVector [f, M[1], M[2], M[3]])
+end
 
 
 ############################################################################################

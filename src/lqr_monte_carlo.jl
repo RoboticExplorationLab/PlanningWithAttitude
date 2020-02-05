@@ -29,7 +29,8 @@ function test_controller(Rot, x0::RBState; dt=1e-4, tf=10.0, dt_cntrl=dt)
         bref = [@SVector [1,0,0.] for k = 1:length(times)]
         Xdref = [@SVector zeros(13) for k = 1:length(times)]
 
-        cntrl = SE3Tracking(model, Xref, Xdref, bref, collect(times))
+        # cntrl = SE3Tracking(model, Xref, Xdref, bref, collect(times))
+        cntrl = HFCA(model, Xref, Xdref, bref, collect(times))
         xinit = Dynamics.build_state(model, x0)
         res = simulate(model, cntrl, xinit, tf, dt=dt, w=0.0)
     end
@@ -39,7 +40,9 @@ end
 
 function calc_err(X::Vector{<:RBState}, x0::RBState)
     err = map(X) do x
-        norm(x ⊖ x0)
+        dx = x ⊖ x0
+        Iq = Diagonal(@SVector [1,1,1, 1,1,0, 1,1,1, 1,1,1.])
+        sqrt(dx'Iq*dx)
     end
 end
 
