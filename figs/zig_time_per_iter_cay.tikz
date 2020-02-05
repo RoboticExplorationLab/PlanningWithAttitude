@@ -1,0 +1,12 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, ylabel={time per iteration (ms)}, enlargelimits={0.15}, legend style={at={(0.5,-0.15)
+}, anchor={north}, legend columns={-1}}, symbolic x coords={Quadratic,QuatLQR,ErrorQuadratic}, xtick={data}, nodes near coords, nodes near coords align={vertical}]
+    \addplot
+        coordinates {
+            (Quadratic,0.9314518478260869)
+            (QuatLQR,0.7603346153846153)
+            (ErrorQuadratic,1.852238448275862)
+        }
+        ;
+\end{axis}
+\end{tikzpicture}
