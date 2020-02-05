@@ -8,7 +8,10 @@ using MeshCat
 using TrajOptPlots
 using DataFrames
 using JLD2
+using PlanningWithAttitude
+using PGFPlotsX
 const TO = TrajectoryOptimization
+include("../problems/quadrotor_problems.jl")
 
 model = Dynamics.Quadrotor2{UnitQuaternion{Float64,CayleyMap}}()
 if !isdefined(Main,:vis)
@@ -16,12 +19,15 @@ if !isdefined(Main,:vis)
     set_mesh!(vis, model)
 end
 
-solver = gen_quad_zigzag(UnitQuaternion{Float64,VectorPart}, use_rot=true,
+solver = gen_quad_zigzag(RPY{Float64}, use_rot=false,
+    costfun=:Quadratic, constrained=false, normcon=false)
+solver = gen_quad_zigzag(UnitQuaternion{Float64,IdentityMap}, use_rot=false,
+    costfun=:Quadratic, constrained=false, normcon=false)
+solver = gen_quad_zigzag(UnitQuaternion{Float64,CayleyMap}, use_rot=true,
     costfun=:QuatLQR, constrained=false, normcon=false)
-solver = gen_quad_zigzag(UnitQuaternion{Float64,ReNorm}, use_rot=false,
-    costfun=:Quadratic, constrained=true, normcon=false)
 solver.opts.verbose = true
 solve!(solver)
+iterations(solver)
 visualize!(vis, solver)
 conSet = get_constraints(solver)
 size(solver)
@@ -60,14 +66,14 @@ function run_all(gen_prob;kwargs...)
     # Baseline methods
     println("Baseline methods")
     log_solve!(gen_prob(UnitQuaternion{Float64, IdentityMap}, use_rot=false), data; kwargs...)
-    log_solve!(gen_prob(RodriguesParam{Float64}, use_rot=false), data; kwargs...)
-    log_solve!(gen_prob(MRP{Float64}, use_rot=false), data; kwargs...)
+    # log_solve!(gen_prob(RodriguesParam{Float64}, use_rot=false), data; kwargs...)
+    # log_solve!(gen_prob(MRP{Float64}, use_rot=false), data; kwargs...)
     log_solve!(gen_prob(RPY{Float64}, use_rot=false), data; kwargs...)
 
     # Quaternion Methods
     println("Quaternion methods")
-    for rmap in [ExponentialMap, CayleyMap, MRPMap, VectorPart]
-        for costfun in [:Quadratic, :QuatLQR, :ErrorQuad]
+    for rmap in [CayleyMap,] #[ExponentialMap, CayleyMap, MRPMap, VectorPart]
+        for costfun in [:QuatLQR,] #[:Quadratic, :QuatLQR, :ErrorQuad]
             log_solve!(gen_prob(UnitQuaternion{Float64, rmap}, costfun=costfun), data; kwargs...)
         end
     end
@@ -75,7 +81,7 @@ function run_all(gen_prob;kwargs...)
 end
 
 
-data = run_all(gen_quad_zigzag, samples=10, evals=1)
+data_zig = run_all(gen_quad_zigzag, samples=10, evals=1)
 data_quats = compare_quats(gen_quad_zigzag, samples=1, evals=1)
 
 
@@ -93,6 +99,29 @@ bases = in([:IdentityMap, :MRP, :RP, :RPY])
 tpi = df[bases.(df.rotation),:]
 tpi = by(df, :rots, :time_per_iter=>minimum)
 coord = Coordinates(tpi.rots, tpi.time_per_iter_minimum)
+cay = df[df.name .== :CayleyMap,:]
+cay[:,[:name,:costfun,:time,:time_per_iter,:iterations]]
+
+p = @pgf Axis(
+    {
+        ybar,
+        ylabel="time per iteration (ms)",
+        enlargelimits = 0.15,
+        legend_style =
+        {
+            at = Coordinate(0.5, -0.15),
+            anchor = "north",
+            legend_columns = -1
+        },
+        symbolic_x_coords=string.(cay.costfun),
+        xtick = "data",
+        nodes_near_coords,
+        nodes_near_coords_align={vertical},
+    },
+    Plot(Coordinates(string.(cay.costfun), cay.time_per_iter)),
+    # Legend(["90 degrees", "180 degrees", "270 degrees"])
+)
+pgfsave("figs/zig_time_per_iter_cay.tikz", p, include_preamble=false)
 
 p = @pgf Axis(
     {
@@ -218,6 +247,7 @@ pgfsave("figs/zig_base_iters.tikz", p, include_preamble=false)
 
 base = df[bases.(df.rotation),:]
 quat = df[quats.(df.rotation),:]
+cay = quat[quat.name .== :CayleyMap,:]
 qlqr  = quat[quat.costfun .== :QuatLQR,:]
 equad = quat[quat.costfun .== :ErrorQuadratic,:]
 quad  = quat[quat.costfun .== :Quadratic,:]
@@ -227,7 +257,6 @@ coord_all = Coordinates(quad_all.rots, quad_all.time)
 coord1 = Coordinates(qlqr.rots, qlqr.time)
 coord2 = Coordinates(equad.rots, equad.time)
 coord3 = Coordinates(quad.rots, quad.time)
-
 
 p = @pgf Axis(
     {
@@ -241,7 +270,34 @@ p = @pgf Axis(
             anchor = "north",
             legend_columns = -1
         },
-        symbolic_x_coords=tpi.rots,
+        symbolic_x_coords=string.(cay.costfun),
+        xtick = "data",
+        nodes_near_coords,
+        nodes_near_coords_align={vertical},
+        "every node near coord/.append style={/pgf/number format/.cd, fixed,precision=0}"
+    },
+    # Plot(coord_all),
+    Plot(Coordinates(string.(cay.costfun), cay.time))
+    # Plot(coord3),
+    # Plot(coord2),
+    # Plot(coord1),
+    # Legend(["Quadratic", "Error Quadratic", "Geodesic"])
+)
+pgfsave("figs/zig_time_cay.tikz", p, include_preamble=false)
+
+p = @pgf Axis(
+    {
+        ybar,
+        ylabel="solve time (ms)",
+        # "enlarge limits" = 0.20,
+        "enlarge x limits" = 0.2,
+        legend_style =
+        {
+            at = Coordinate(0.5, -0.12),
+            anchor = "north",
+            legend_columns = -1
+        },
+        symbolic_x_coords=qlqr.rots,
         xtick = "data",
         nodes_near_coords,
         nodes_near_coords_align={vertical},

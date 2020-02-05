@@ -29,14 +29,16 @@ xmin = @SVector [-1,-1,-1, 1,0,0,0, -5,-5,-5, -5,-5,-5]
 xmax = @SVector [ 1, 1, 1, 1,0,0,0,  5, 5, 5,  5, 5, 5]
 xmin = RBState(xmin)
 xmax = RBState(xmax)
-ICs = generate_ICs(model,xmin,xmax,100)
-data2 = run_MC(ICs, dt_cntrl=0.01)
+ICs = generate_ICs(model,xmin,xmax,1000)
+@time data2 = run_MC(ICs, dt_cntrl=0.01,
+    types=[CayleyMap, IdentityMap, RPY{Float64}, SE3Tracking])
 
 df = DataFrame(data2)
 df.success = df.term_err .< 0.1
 by(df, :name, :success=>percentage)
 dfs = df[df.success, :]
 by(dfs, :name, (:max_err=>mean, :max_err=>maximum, :avg_err=>mean))
+df[.!df.success,:]
 
 x0 = zero(RBState)
 X = test_controller(ExponentialMap, ICs[1], dt_cntrl=0.01, tf=10.0)

@@ -138,10 +138,10 @@ function gen_quad_zigzag(Rot; use_rot=Rot<:UnitQuaternion, costfun=:Quadratic,
         xg = Dynamics.build_state(model, r, q_nom, v_nom, ω_nom)
         if times[i] == N
             Q = Diagonal(Qf_diag)
-            w = 1.0
+            w = 40.0
         else
             Q = Diagonal(1e-3*Qw_diag)
-            w = 0.0
+            w = 0.1
         end
         if costfun == :QuatLQR
             QuatLQRCost(Q, R, xg, w=w)
