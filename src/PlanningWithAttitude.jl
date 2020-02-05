@@ -23,7 +23,6 @@ using JLD2
 
 include("rbstate.jl")
 include("plotting.jl")
-include("testing.jl")
 include("tracking_control.jl")
 include("lqr_monte_carlo.jl")
 end
