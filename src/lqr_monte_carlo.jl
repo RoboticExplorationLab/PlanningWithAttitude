@@ -17,7 +17,12 @@ function test_controller(Rot, x0::RBState; dt=1e-4, tf=10.0, dt_cntrl=dt)
         xref = zeros(model)[1]
         cntrl = LQR(model, dt_cntrl, Q, R, xref, uref)
         xinit = Dynamics.build_state(model, x0)
-        res = simulate(model, cntrl, xinit, tf, dt=dt, w=0.0)
+        try
+            res = simulate(model, cntrl, xinit, tf, dt=dt, w=0.0)
+        catch
+            N = tf/dt + 1
+            res = [zero(xref)*NaN for i = 1:N]
+        end
     elseif Rot == SE3Tracking
         Rot = UnitQuaternion{Float64,IdentityMap}
         model = Dynamics.Quadrotor2{Rot}(use_rot=false)
@@ -41,7 +46,7 @@ end
 function calc_err(X::Vector{<:RBState}, x0::RBState)
     err = map(X) do x
         dx = x ⊖ x0
-        Iq = Diagonal(@SVector [1,1,1, 1,1,0, 1,1,1, 1,1,1.])
+        Iq = Diagonal(@SVector [1,1,1, 1,1,1, 1,1,1, 1,1,1.])
         sqrt(dx'Iq*dx)
     end
 end

@@ -46,7 +46,7 @@ function Base.:-(s1::RBState, s2::RBState)
     RBState(s1.r-s2.r, s2.q\s1.q, s1.v-s2.v, s1.ω-s2.ω)
 end
 
-function TrajectoryOptimization.:⊖(s1::RBState, s2::RBState, rmap=ExponentialMap)
+function TrajectoryOptimization.:⊖(s1::RBState, s2::RBState, rmap=CayleyMap)
     dx = s1.r-s2.r
     dq = rmap(s2.q\s1.q)
     dv = s1.v-s2.v
