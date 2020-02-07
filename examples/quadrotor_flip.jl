@@ -158,7 +158,7 @@ function gen_quad_flip(Rot=UnitQuaternion{Float64,CayleyMap}; use_rot=Rot<:UnitQ
     end
     Z = deepcopy(prob.Z)
     TO.set_states!(Z, X_guess)
-    visualize!(vis, model, Z)
+    # visualize!(vis, model, Z)
     initial_states!(prob, X_guess)
 
     opts_ilqr = iLQRSolverOptions{T}(verbose=false,
@@ -197,11 +197,12 @@ end
 rpy = RPY{Float64}
 cay = UnitQuaternion{Float64,CayleyMap}
 quat = UnitQuaternion{Float64,IdentityMap}
-solver = gen_quad_flip(quat)
+solver = gen_quad_flip(cay)
 Z0 = deepcopy(get_trajectory(solver))
 # b3 = benchmark_solve!(solver)
 solve!(solver)
 max_violation(solver)
+visualize!(vis, model, get_trajectory(solver))
 
 function run_all(gen_prob;kwargs...)
     # Initial data structure
@@ -228,7 +229,8 @@ visualize!(vis, model, get_trajectory(solver))
 states(solver)[61]
 
 waypoints!(vis, model, get_trajectory(solver),
-    inds=[1,15,20,25,28,32,36,39,41,43,46,51,55,58,60,62,65,70,75,77,80,90,101])
+    inds=[1,15,20,25,28,32,36,39,41,43,45,47,51,54,56,58,60,62,65,70,75,80,101])
+delete!(vis["robot"])
 
 ############################################################################################
 #                              COMBINED PLOT
