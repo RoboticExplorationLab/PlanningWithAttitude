@@ -24,11 +24,12 @@ solver = gen_quad_zigzag(RPY{Float64}, use_rot=false,
 solver = gen_quad_zigzag(UnitQuaternion{Float64,IdentityMap}, use_rot=false,
     costfun=:Quadratic, constrained=false, normcon=false)
 solver = gen_quad_zigzag(UnitQuaternion{Float64,CayleyMap}, use_rot=true,
-    costfun=:QuatLQR, constrained=false, normcon=false)
+    costfun=:ErrorQuad, constrained=false, normcon=false)
 solver.opts.verbose = true
 solve!(solver)
 iterations(solver)
 visualize!(vis, solver)
+
 conSet = get_constraints(solver)
 size(solver)
 plot(controls(solver))
@@ -73,7 +74,7 @@ function run_all(gen_prob;kwargs...)
     # Quaternion Methods
     println("Quaternion methods")
     for rmap in [CayleyMap,] #[ExponentialMap, CayleyMap, MRPMap, VectorPart]
-        for costfun in [:QuatLQR,] #[:Quadratic, :QuatLQR, :ErrorQuad]
+        for costfun in [:QuatLQR, :ErrorQuad] #[:Quadratic, :QuatLQR, :ErrorQuad]
             log_solve!(gen_prob(UnitQuaternion{Float64, rmap}, costfun=costfun), data; kwargs...)
         end
     end
@@ -85,7 +86,7 @@ data_zig = run_all(gen_quad_zigzag, samples=10, evals=1)
 data_quats = compare_quats(gen_quad_zigzag, samples=1, evals=1)
 
 
-df = DataFrame(data)
+df = DataFrame(data_zig)
 df.rots = string.(short_names.(df.rotation))
 df.time_per_iter = df.time ./ df.iterations
 quats = in([:ExponentialMap, :CayleyMap, :MRPMap, :VectorPart])

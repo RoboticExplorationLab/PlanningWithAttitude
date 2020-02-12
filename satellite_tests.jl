@@ -97,8 +97,8 @@ function gen_sat_prob(Rot=UnitQuaternion{Float64,CayleyMap};
     return solver
 end
 
-solver = gen_sat_prob(MRP{Float64}, cost=:SatDiff,
-    use_rot=false, ang=deg2rad(90))
+solver = gen_sat_prob(UnitQuaternion{Float64,CayleyMap}, cost=:QuatLQR,
+    use_rot=true, ang=deg2rad(90))
 solve!(solver)
 visualize!(vis, solver.model, solver.Z)
 solver.stats.iterations
