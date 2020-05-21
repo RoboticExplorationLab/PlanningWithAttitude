@@ -9,13 +9,16 @@ using Random
 using Distributions
 using Plots
 using PGFPlotsX
+using BenchmarkTools
+import TrajectoryOptimization: ExponentialMap
 include("../problems/quadrotor_problems.jl" )
 
 model = Dynamics.Quadrotor2()
 if !isdefined(Main,:vis)
     vis = Visualizer(); open(vis);
-    set_mesh!(vis, model)
 end
+delete!(vis)
+set_mesh!(vis, model)
 
 # Solve Quadrotor zig-zag problem
 Rot = MRP{Float64}
@@ -187,7 +190,7 @@ df[:,[:name,:err]]
 df.label = convert_names.(df.name) .* ": w = " .* string.(df.noise)
 
 styles = Dict(ws[1]=>"solid",ws[2]=>"dotted",ws[3]=>"dashed")
-colors = Dict(:CayleyMap=>"blue",:SO3=>"red")
+colors = Dict(:CayleyMap=>"blue",:SO3=>"red",:RPY=>"orange")
 df.style = [styles[n] for n in df.noise]
 df.color = [colors[n] for n in df.name]
 df.coords = map(1:size(df,1)) do i

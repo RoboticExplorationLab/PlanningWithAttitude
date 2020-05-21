@@ -41,9 +41,9 @@ dfs = df[df.success, :]
 by(dfs, :name, (:max_err=>mean, :max_err=>maximum, :avg_err=>mean))
 df[.!df.success,:]
 
-x0 = zero(RBState)
-X = test_controller(ExponentialMap, ICs[1], dt_cntrl=0.01, tf=10.0)
-visualize!(vis, X[1:100:length(X)], tf)
+# x0 = zero(RBState)
+# X = test_controller(ExponentialMap, ICs[1], dt_cntrl=0.01, tf=10.0)
+# visualize!(vis, X[1:100:length(X)], tf)
 
 
 # Calculate controller speed

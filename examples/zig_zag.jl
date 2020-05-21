@@ -1,5 +1,6 @@
 
 using TrajectoryOptimization
+using PlanningWithAttitude
 using Statistics
 using Random
 using StaticArrays
@@ -8,7 +9,6 @@ using MeshCat
 using TrajOptPlots
 using DataFrames
 using JLD2
-using PlanningWithAttitude
 using PGFPlotsX
 const TO = TrajectoryOptimization
 include("../problems/quadrotor_problems.jl")
@@ -30,27 +30,8 @@ solve!(solver)
 iterations(solver)
 visualize!(vis, solver)
 
-conSet = get_constraints(solver)
-size(solver)
 plot(controls(solver))
 waypoints!(vis, solver.model, solver.Z, length=31)
-
-benchmark_solve!(solver)
-bquat = benchmark_solve!(solver)
-
-model1 = Dynamics.Quadrotor2{UnitQuaternion{Float64,VectorPart}}()
-model2 = Dynamics.Quadrotor2{UnitQuaternion{Float64,ReNorm}}()
-x,u = rand(model1)
-z = KnotPoint(x,u,0.1)
-x1 = discrete_dynamics(model1, z)
-norm(orientation(model1, x1, false))
-x2 = discrete_dynamics(model2, z)
-norm(orientation(model1, x2, false))
-
-model3 = Dynamics.Quadrotor2{UnitQuaternion{Float64,ReNorm}}(use_rot=:slack)
-x,u = rand(model3)
-z = KnotPoint(x,u,0.1)
-x3 = dynamics(model3, z)
 
 function log_solve!(solver, data; name=rot_type(solver), kwargs...)
     b = benchmark_solve!(solver, data; kwargs...)
@@ -76,6 +57,41 @@ function run_all(gen_prob;kwargs...)
     for rmap in [CayleyMap,] #[ExponentialMap, CayleyMap, MRPMap, VectorPart]
         for costfun in [:QuatLQR, :ErrorQuad] #[:Quadratic, :QuatLQR, :ErrorQuad]
             log_solve!(gen_prob(UnitQuaternion{Float64, rmap}, costfun=costfun), data; kwargs...)
+        end
+    end
+    return data
+end
+
+function compare_quats(gen_prob; kwargs...)
+    # Initial data structure
+    data = Dict{Symbol,Vector}(:name=>Symbol[], :costfun=>Symbol[], :iterations=>Int[],
+        :rotation=>Symbol[], :time=>Float64[], :cost=>Float64[])
+
+    # Treat quaternion as normal vector
+    println("Quat")
+    log_solve!(gen_prob(UnitQuaternion{Float64, IdentityMap}, use_rot=false),
+        data; name=:Quat, kwargs...)
+
+    # Re-normalize after disretization
+    println("ReNorm")
+    log_solve!(gen_prob(UnitQuaternion{Float64, ReNorm}, use_rot=false),
+        data; name=:ReNorm, kwargs...)
+
+    # Use Unit Norm Constraint
+    println("NormCon")
+    log_solve!(gen_prob(UnitQuaternion{Float64, IdentityMap}, use_rot=false,
+        normcon=true), data; name=:NormCon, kwargs...)
+
+    # Use Unit Norm Constrained with slack
+    println("QuatSlack")
+    log_solve!(gen_prob(UnitQuaternion{Float64, IdentityMap}, use_rot=:slack,
+        normcon=true), data; name=:QuatSlack, kwargs...)
+
+    for rmap in [ExponentialMap, CayleyMap, MRPMap, VectorPart]
+        println(rmap)
+        for costfun in [:QuatLQR, :Quadratic] #[:Quadratic, :QuatLQR, :ErrorQuad]
+            log_solve!(gen_prob(UnitQuaternion{Float64, rmap}, costfun=costfun,
+                normcon=false), data; kwargs...)
         end
     end
     return data

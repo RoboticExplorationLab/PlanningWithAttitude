@@ -39,8 +39,9 @@ n,m = 13,4
 
 if !isdefined(Main,:vis)
     vis = Visualizer(); open(vis);
-    set_mesh!(vis, model)
 end
+delete!(vis)
+set_mesh!(vis, model)
 
 function gen_quad_flip(Rot=UnitQuaternion{Float64,CayleyMap}; use_rot=Rot<:UnitQuaternion,
         costfun=:auto)
@@ -195,8 +196,8 @@ end
 
 # Try ALTRO
 rpy = RPY{Float64}
-cay = UnitQuaternion{Float64,CayleyMap}
 quat = UnitQuaternion{Float64,IdentityMap}
+cay = UnitQuaternion{Float64,CayleyMap}
 solver = gen_quad_flip(cay)
 Z0 = deepcopy(get_trajectory(solver))
 # b3 = benchmark_solve!(solver)
@@ -228,6 +229,7 @@ data_flip = run_all(gen_quad_flip, samples=10, evals=1)
 visualize!(vis, model, get_trajectory(solver))
 states(solver)[61]
 
+delete!(vis)
 waypoints!(vis, model, get_trajectory(solver),
     inds=[1,15,20,25,28,32,36,39,41,43,45,47,51,54,56,58,60,62,65,70,75,80,101])
 delete!(vis["robot"])

@@ -17,8 +17,9 @@ Rot = MRP{Float64}
 model = Dynamics.YakPlane(Rot)
 if !isdefined(Main,:vis)
     vis = Visualizer(); open(vis);
-    set_mesh!(vis, model)
 end
+delete!(vis)
+set_mesh!(vis, model)
 
 function gen_barrellroll(Rot; kwargs...)
     prob = Problems.YakProblems(Rot, scenario=:barrellroll; kwargs...)
