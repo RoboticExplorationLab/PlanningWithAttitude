@@ -1,0 +1,26 @@
+
+% Image credit: https://tex.stackexchange.com/questions/261408/sphere-tangent-to-plane
+\begin{tikzpicture}[
+      point/.style = {draw, circle, fill=black, inner sep=0.7pt},
+    ]
+    \def\rad{2cm}
+    \coordinate (O) at (0,0); 
+    \coordinate (N) at (0,\rad); 
+    \coordinate (W) at (1.25cm, \rad);
+    
+    \filldraw[ball color=white] (O) circle [radius=\rad];
+    \draw[dashed] 
+      (\rad,0) arc [start angle=0,end angle=180,x radius=\rad,y radius=5mm];
+    \draw
+      (\rad,0) arc [start angle=0,end angle=-180,x radius=\rad,y radius=5mm];
+    \begin{scope}[xslant=0.5,yshift=\rad,xshift=-2]
+    \filldraw[fill=gray!10,opacity=0.2]
+      (-4,1) -- (3,1) -- (3,-1) -- (-4,-1) -- cycle;
+    \node at (2,0.6) {$T$};  
+    \end{scope}
+    \draw[dashed]
+      (N) node[above] {$q$} -- (O) node[below] {$O$};
+    \draw[->, thick]
+      (N) -- (W) node[right] {$\delta q$};
+    \node[point] at (N) {};
+\end{tikzpicture} 

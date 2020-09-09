@@ -1,0 +1,33 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, 
+        ylabel={solve time (ms)}, 
+        legend style={at={(0.5,-0.07)}, 
+        anchor={north},
+        enlarge x limits = 0.1,
+        legend columns={-1}}, symbolic x coords={Quat,Norm,Con,Slack,Exp,Cay,dMRP,Vec}, xtick={data}, nodes near coords, nodes near coords align={vertical}, 
+        every node near coord/.append style={/pgf/number format/.cd, fixed,precision=0},
+        restrict y to domain*=0:1000, % Cut values off at 14
+        visualization depends on=rawy\as\rawy, % Save the unclipped values
+        after end axis/.code={ % Draw line indicating break
+                \draw [ultra thick, white, decoration={snake, amplitude=1pt}, decorate] (rel axis cs:0,0.85) -- (rel axis cs:1,0.85);
+            },
+        nodes near coords={%
+                \pgfmathprintnumber{\rawy}% Print unclipped values
+            },
+        axis lines*=left,
+        clip=false
+]
+    \addplot
+        coordinates {
+            (Quat,686.1326409999999)
+            (Norm,679.6585739999999)
+            (Con,17593.215275)
+            (Slack,695.095649)
+            (Exp,662.6584339999999)
+            (Cay,302.79486399999996)
+            (dMRP,676.166565)
+            (Vec,250.12309499999998)
+        }
+        ;
+\end{axis}
+\end{tikzpicture}

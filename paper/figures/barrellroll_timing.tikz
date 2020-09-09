@@ -1,0 +1,25 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, ylabel={solve time (ms)}, 
+    enlarge y limits = {0.2},
+    enlarge x limits = 0.2,
+    legend style={at={(0.5,-0.12)
+}, anchor={north}, legend columns={-1}},
+    symbolic x coords={Airplane, Quad Flip}, xtick={data}, nodes near coords, nodes near coords align={vertical}, every node near coord/.append style={/pgf/number format/.cd, fixed,precision=0}]
+    \addplot
+        coordinates {
+            (Airplane,22.3148315)
+            (Quad Flip,102)
+        };
+     \addplot
+        coordinates {
+            (Airplane,29.528505)
+            (Quad Flip,138)
+        };
+    \addplot
+        coordinates {
+            (Airplane,70.2168185)
+            % (Quad Flip,200)
+        };
+    \legend{iMLQR,Quat,RPY}
+\end{axis}
+\end{tikzpicture}

@@ -1,0 +1,47 @@
+% \begin{tikzpicture}
+% \begin{axis}[ybar, ylabel={time per iteration (ms)}, 
+%     enlarge x limits={0.1},
+%     enlarge y limits=0.2,
+%     legend style={at={(0.5,-0.15)
+% }, anchor={north}, legend columns={-1}}, symbolic x coords={Quat,RP,MRP,RPY,Exp,Cay,dMRP,Vec}, xtick={data}, nodes near coords, nodes near coords align={vertical}]
+%     \addplot
+%         coordinates {
+%             (Quat,0.9319277499999999)
+%             (RP,0.6149584615384615)
+%             (MRP,0.7106367692307691)
+%             (RPY,0.771275705882353)
+%             (Exp,0.8682562142857142)
+%             (Cay,0.8481888461538462)
+%             (dMRP,0.8040950869565218)
+%             (Vec,0.7600637272727272)
+%         }
+%         ;
+% \end{axis}
+% \end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{axis}[ybar, 
+    ylabel={time per iteration (ms)}, 
+    x = 1cm,
+    enlarge x limits={0.3},
+    enlarge y limits=0.2,
+    legend style={at={(0.5,-0.15) },  anchor={north}, legend columns={-1}}, 
+    symbolic x coords={Quat,RPY,Cay}, 
+    xtick={data}, 
+    nodes near coords, 
+    nodes near coords align={vertical}
+    ]
+    \addplot
+        coordinates {
+            (Quat,0.9319277499999999)
+            % (RP,0.6149584615384615)
+            % (MRP,0.7106367692307691)
+            (RPY,0.771275705882353)
+            % (Exp,0.8682562142857142)
+            (Cay,0.8481888461538462)
+            % (dMRP,0.8040950869565218)
+            % (Vec,0.7600637272727272)
+        }
+        ;
+\end{axis}
+\end{tikzpicture}

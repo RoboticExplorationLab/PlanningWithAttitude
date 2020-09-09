@@ -1,0 +1,66 @@
+This is BibTeX, Version 0.99d (TeX Live 2019)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: main_ieee.aux
+The style file: plainnat.bst
+Database file #1: references.bib
+You're missing a field name---line 30 of file references.bib
+ : 
+ : %   url = {http://link.springer.com/10.1007/s10851-017-0765-x},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+You're missing a field name---line 471 of file references.bib
+ : 
+ : %   urldate = {2020-01-08},
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+Warning--to sort, need author or key in Zefran1999
+Warning--to sort, need author or key in Terzakis2018
+Warning--empty author in Terzakis2018
+Warning--empty year in Terzakis2018
+Warning--empty year in Terzakis2018
+Warning--empty author in Zefran1999
+Warning--empty journal in Zefran1999
+Warning--empty year in Zefran1999
+Warning--empty year in Zefran1999
+You've used 42 entries,
+            2773 wiz_defined-function locations,
+            928 strings with 14331 characters,
+and the built_in function-call counts, 20528 in all, are:
+= -- 1968
+> -- 919
+< -- 33
++ -- 315
+- -- 273
+* -- 1689
+:= -- 3053
+add.period$ -- 191
+call.type$ -- 42
+change.case$ -- 213
+chr.to.int$ -- 42
+cite$ -- 95
+duplicate$ -- 974
+empty$ -- 1762
+format.name$ -- 339
+if$ -- 4458
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 42
+newline$ -- 279
+num.names$ -- 160
+pop$ -- 387
+preamble$ -- 1
+purify$ -- 175
+quote$ -- 0
+skip$ -- 720
+stack$ -- 0
+substring$ -- 919
+swap$ -- 169
+text.length$ -- 10
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 452
+warning$ -- 9
+while$ -- 165
+width$ -- 0
+write$ -- 672
+(There were 2 error messages)

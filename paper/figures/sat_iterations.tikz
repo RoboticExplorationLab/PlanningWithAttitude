@@ -1,0 +1,42 @@
+\begin{tikzpicture}
+\begin{axis}[ybar, ylabel={\#iterations}, x={1.5cm}, legend style={at={(0.5,-0.15)
+}, anchor={north}, legend columns={-1}}, symbolic x coords={Exp,Cay,dMRP,Vec,Quat,RP,MRP,RPY}, xtick={data}, nodes near coords, nodes near coords align={vertical}, error bars/y dir=both, error bars/y explicit]
+    \addplot
+        coordinates {
+            (Exp,3.0) +- (0,0.48304589153964794)
+            (Cay,5.0) +- (0,0.7888106377466155)
+            (dMRP,5.0) +- (0,0.5163977794943222)
+            (Vec,4.0) +- (0,7.604092465391398)
+            (Quat,3.0) +- (0,0.42163702135578385)
+            (RP,3.0) +- (0,0.0)
+            (MRP,3.0) +- (0,0.5163977794943223)
+            (RPY,4.0) +- (0,0.6666666666666666)
+        }
+        ;
+    \addplot
+        coordinates {
+            (Exp,4.0) +- (0,1.1785113019775793)
+            (Cay,0.0) +- (0,0.0)
+            (dMRP,6.0) +- (0,0.6992058987801011)
+            (Vec,17.0) +- (0,22.642388959157504)
+            (Quat,4.0) +- (0,0.0)
+            (RP,0.0) +- (0,0.0)
+            (MRP,5.5) +- (0,0.9660917830792959)
+            (RPY,6.0) +- (0,1.509230856356236)
+        }
+        ;
+    \addplot
+        coordinates {
+            (Exp,9.0) +- (0,2.3475755815545343)
+            (Cay,6.0) +- (0,1.2292725943057181)
+            (dMRP,11.0) +- (0,2.0789954839350235)
+            (Vec,4.0) +- (0,0.7888106377466155)
+            (Quat,6.0) +- (0,0.5676462121975466)
+            (RP,3.0) +- (0,0.42163702135578385)
+            (MRP,7.5) +- (0,10.022751895340697)
+            (RPY,4.0) +- (0,0.9660917830792958)
+        }
+        ;
+    \legend{{90 degrees},{180 degrees},{270 degrees}}
+\end{axis}
+\end{tikzpicture}
