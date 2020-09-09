@@ -28,6 +28,7 @@
 \usepackage{booktabs}  % better tables
 \usepackage{pifont}  % for x mark
 \usepackage{graphicx}
+\usepackage{hyperref}
 
 % Plotting
 \usepackage{pgfplots}
@@ -71,6 +72,27 @@ Planning with Attitude
 
 \begin{document}
 \maketitle
+
+\begin{abstract}
+Planning and controlling trajectories for floating-base robotic systems that experience
+large attitude changes is challenging due to the nontrivial group structure of 3D
+rotations. This paper introduces an accessible and unified approach for tracking control
+and optimization-based planning on the space of rotations based on vector calculus and
+linear algebra. The methodology is used to derive an extension of the Linear-Quadratic
+Regulator (LQR) to systems with arbitrary attitudes, which we call Multiplicative LQR
+(MLQR). We compare MLQR to a state-of-the-art geometric tracking controller designed
+specifically for quadrotors and demonstrate superior tracking and robustness. An
+iterative variant of MLQR is compared to existing methods on useveral constrained
+trajectory optimization problems, again demonstrating improved runtime performance. %to
+optimize trajectories for a variety of robotic systems, we provide benchmark comparisons
+between several of the most common attitude representations used for motion planning and
+control and find that the combination of unit quaternion state variables with Rodrigues
+parameters to represent attitude errors provides an excellent combination of performance
+and algorithmic simplicity.
+\keywords{
+    motion planning and control, quaternions, optimal control, linear quadratic regulator
+}
+\end{abstract}
 
 \section{INTRODUCTION}
     Many useful robotic systems---including quadrotors, airplanes, satellites, autonomous 
@@ -443,14 +465,12 @@ Planning with Attitude
             \begin{equation}
                 \nabla J_\text{err }= \phi^T Q  D(\delta q)  G(\delta q)
             \end{equation}
-            \begin{equation}
-                \begin{aligned}
-                     \nabla^2 J_\text{err} &= 
-                        G(\delta q)^T \! \left(
-                        D(\delta q)^T Q D(\delta q) + \nabla D \right) G(\delta q) 
-                      + I_3 (\phi^T Q  D(\delta q)) \delta q %\\
-                \end{aligned}
-            \end{equation}
+            \begin{multline}
+                \nabla^2 J_\text{err} = 
+                    G(\delta q)^T \! \left(
+                    D(\delta q)^T Q D(\delta q) + \nabla D \right) G(\delta q)  \\
+                    + I_3 (\phi^T Q  D(\delta q)) \delta q %\\
+            \end{multline}
             where, for the Cayley map,
             \begin{equation}
                 D(q) = \pdv{\varphi^{-1}}{q} = -\frac{1}{q_s^2}\begin{bmatrix}
@@ -464,5 +484,251 @@ Planning with Attitude
                                    Q \phi & 0 \\
                 \end{bmatrix}.
             \end{equation}
+
+        \subsubsection{Geodesic Distance}
+            Alternatively, we can use the geodesic distance between two quaternions
+            \cite{Kuffner2004},
+            \begin{equation} \label{eq:quat_geodesic}
+                J_\text{geo} = (1-\abs{q_g^T q}) ,
+            \end{equation}
+            whose gradient and Hessian are,
+            \begin{align}
+                \nabla J_\text{geo} &= \pm q_g^T G(q) \\
+                \nabla^2 J_\text{geo} &= \pm I_3 q_g^T q ,
+            \end{align}
+            where the sign of the Hessian corresponds to the sign of $q_d^T q$.
+
+
+\section{Experiments} \label{sec:experiments}
+    Code for all experiments is available on 
+    \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
+    {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
+        
+    \subsection{Trajectory Optimization}
+        In this section we present several trajectory optimization problems solved using
+        our modified version of ALTRO. The two quadrotor examples use 101 knot points for
+        5 second trajectories, and the airplane example uses 51 knot points for a 1.25
+        second trajectory. All results were run on a desktop computer with an Intel
+        i9-9900 3.10 GHz processor with 32GB of memory. Timing results for all three
+        experiments are given in Fig. \ref{fig:timing_chart}.
+        
+        In all examples, MLQR is implemented with a unit quaternion attitude state and
+        Rodrigues parameters as the error state. The first example compares the two cost
+        functions given in Sec. \ref{sec:cost_functions}, while the last two use the
+        geodesic quaternion cost and compare iterative MLQR (iMLQR) from Sec.
+        \ref{sec:MLQR} to iLQR using roll-pitch-yaw Euler angles following the convention
+        from \cite{michael2010grasp}, and quaternions (treating them na\"ively as
+        vectors). All examples re-normalize the quaternion in the dynamics function and
+        use a third-order explicit Runge-Kutta integrator.
+        
+        \begin{figure}
+            \centering
+            \includegraphics[height=4cm, width=8cm]{figures/timing_chart.tikz}
+            \caption{Timing results for the airplane barrell roll, quadrotor
+                flip, and quadrotor zig-zag examples using iLQR with
+                roll-pitch-yaw Euler angles (RPY), quaternions, and iMLQR. The
+                timing result for the Quadrotor flip with Euler angles is omitted
+                since it failed to converge.
+            }
+            \label{fig:timing_chart}
+        \end{figure}
+
+        \subsubsection{Quadrotor Zig-Zag}
+            \begin{figure}[t]
+                \centering
+                \includegraphics[height=5.2cm]{figures/zig_zag_tracking.png}
+                \caption{Zig-zag trajectory. The black quadrotors indicate
+                    the reference trajectory generated by iMLQR. The yellow
+                    quadrotors track the reference trajectory using time-varying
+                    MLQR, while the red uses the HFCA controller from
+                    \cite{watterson2020control}.
+                }
+                \label{fig:zig-zag}
+            \end{figure}    
+            \begin{figure}[t]
+                \centering
+                \includegraphics[height=5.2cm,trim={0 3cm 0 0},clip]{figures/quad_flip.png}
+                \caption{Snapshots of the quadrotor flip trajectory. The
+                    red-colored quadrotors represent the state near t=0 s and the
+                    green-colored quadrotors represent the state near t=5.0 s
+                }
+                \label{fig:quad_flip}
+            \end{figure}    
+            
+        We set up a fairly simple trajectory optimization problem to achieve a
+        ``zig-zag'' pattern, as shown in Fig. \ref{fig:zig-zag} using cost funtions of
+        the form
+        \begin{multline}
+                  \half \sum_{k \in \mathcal{N}} \ell(x_k, x_\text{nom}, Q_\text{nom}) 
+                + \half \sum_{k \in \mathcal{W}} \ell(x_k, \bar{x}_k, Q_w) \\
+                + \half \sum_{k=1} u_k^T R u_k
+        \end{multline}
+        with $\mathcal{W} = \{33,66,101\}$, $\mathcal{N} = \{1:101\} \setminus
+        \mathcal{W}$, and the waypoint positions were $(10,0,1)$,$(-10,0,1)$ and
+        $(0,10,0)$. We compared the two cost functions from Sec.
+        \ref{sec:cost_functions}, using a standard quadratic penalty on the
+        non-quaternion states.
+        \begin{align}
+            \ell_\text{err}(x, \bar{x}, Q) &= \delta x^T Q \delta x \\ 
+            \ell_\text{geo}(x, \bar{x}, Q) &= (x-\bar{x})^T \bar{Q} (x-\bar{x}) + w (1
+                \pm \bar{q}^T q)
+        \end{align}
+        where $\bar{Q} = \text{diag}(Q_r, \vec{0}_4, Q_v, Q_\omega)$, where
+        $Q_r,Q_v,Q_\omega$ are the weights of $Q$ for position, and linear and angular
+        velocity.
+        We used the following weighting matrices: 
+        $Q_\text{nom} = \text{diag}(10^{-5} I_6,10^{-3} I_6)$, 
+        $Q_w = \text{diag}(10^3 I_3,I_9)$, 
+        $Q_N = \text{diag}(10 I_3, 100 I_3, 10 I_6)$.
+        For the geodesic weights $w$, we used 0, 1, and 10 for the nominal, waypoint, and
+        terminal cost functions, respectively.
+        
+        The geodesic cost function performed significantly better than the error
+        quadratic, converging in 10 ms and 13 iterations, compared to 53 ms in 29
+        iterations. In addition to better convergence behavior, the geodesic cost is
+        about half as expensive to compute, which is unsurprising when comparing the
+        gradients and Hessians in Sec. \ref{sec:cost_functions}.
+
+        \subsubsection{Quadrotor Flip}
+	    Similar to the previous example, we use a set of waypoints to encourage the
+	    quadrotor to do a flip. The cost weights for this example were
+	    \begin{align*}
+	        Q_\text{nom} &= \text{diag}(10^{-2},10^{-2},5 \!\times\! 10^{-2}, 10^{-3} I_3,
+    	        10^{-3} I_3, 10^{-2} I_3) \\
+	        Q_w &= \text{diag}(10^3, 10, 10^3, 5000 I_3, I_3, 10 I_3) \\
+	        Q_N &= \text{diag}(10 I_3, 100 I_3, 10 I_6)  
+	    \end{align*}
+	    Four intermediary knotpoints were used to encourage the quadrotor to be at angles
+	    of \ang{90}, \ang{180}, \ang{270}, and \ang{360}. The quadrotor was constrained
+	    to stay above the floor and move to a goal state 2 meters away in the $+y$
+	    direction. The solver is initialized with a dynamically infeasible trajectory
+	    that linearly interpolates between the initial and final states, rotating the
+	    quad around the x-axis a full \ang{360}.
+	    
+	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
+	    iMLQR within the ALTRO solver to handle constraints. The trajectory generated by
+	    iLQR with quaternions and quadratic costs was successful but had a slightly
+        different trajectory. iLQR with Euler angles failed to solve the problem.
+
+        \subsection{Airplane Barrel Roll}
+        An airplane model with aerodynamic coefficients fit from real wind-tunnel data is
+        tasked to do a barrel roll by setting a high terminal cost for being upside-down,
+        see Fig. \ref{fig:barrellroll}. The solver is initialized with level flight trim
+        conditions. For both the quadrotor flip and the airplane barrel roll, iMLQR
+        converged faster than the pure quaternion version. Despite the extra matrix
+        multiplications and extra Hessian term, it also was faster per iteration than its
+        iLQR counterpart. For these highly aerobatic maneuvers, we achieve, as expected,
+        better performance by correctly leveraging the structure of the rotation group
+        during the optimization routine.
+
+        \begin{figure}[h]
+            \centering
+            \includegraphics[height=3.5cm]{figures/barrellroll.png}
+            \caption{Barrel roll trajectory computed by iterative MLQR using a terminal cost to encourage an upside-down attitude.}
+            \label{fig:barrellroll}
+        \end{figure}
+    
+	    \begin{figure}[h]
+	        \centering
+	        \includegraphics[width=\columnwidth,height=4.5cm]{figures/tracking_err.tikz}
+	        \caption{Tracking error over time for the zig-zag trajectory using MLQR and the HFCA geometric controller. Band-limited white noise wrenches of variance $w$ are added to the continuous dynamics. }
+	        \label{fig:tracking_err}
+	    \end{figure}
+        \vspace{-20pt}
+
+	\subsection{Tracking Control}
+	    This section provides examples using MLQR for tracking and stabilizing control
+	    for a quadrotor. We compare our MLQR controller to HFCA, a state-of-the-art
+	    geometric tracking controller \cite{watterson2020control} based on the Hopf
+	    Fibration.
+	    
+	    \subsubsection{MLQR Stabilization}
+	    To test robustness and the domain of attraction of the MLQR controller, a
+	    quadrotor is linearized about hover at the origin and initialized from states
+	    uniformly sampled in $[-1,1]$ for position, $[-5,5]$ for linear and angular
+	    velocities, and uniformly over the entire space of rotations. The success rates
+	    for 2000 trials are given in Table \ref{tab:mlqr_success}, where success is
+	    defined as the terminal error (calculated using \eqref{eq:state_error}) being
+	    within a unit ball of radius 0.1 after 10.0 seconds. To further analyze the
+	    basins of attraction, we uniformly sampled over only roll (which goes singular at
+	    \ang{90} for our Euler angle representation), and yaw. The results are shown in
+	    Fig. \ref{fig:mlqr_basin}, where the plotted contours are the convex hull of the
+	    successfully stabilized initial conditions.
+	    
+	    MLQR slightly exceeds the robustness of the HFCA geometric controller, while also
+	    being more generally applicable, easier to tune, and easier to implement. It is
+	    also noteworthy that na\"ively using LQR with quaternions (incorrectly treating
+	    them as vectors) results in poorer performance than Euler angles, clearly
+	    demonstrating the value of the methodology presented in the current paper.
+	    
+	    \subsubsection{MLQR Tracking}
+	    Time-varying MLQR is used to track the zig-zag trajectory generated in the
+	    previous section. %The controller calculated the gains at $0.01 s$ intervals, and
+	    used zero-order-hold between intervals. To test tracking performance, zero-mean
+	    Gaussian noise was added as force and moments applied to the quadrotor.
+	    
+	    The trajectories and tracking error for MLQR and HFCA are shown in Figs.
+	    \ref{fig:zig-zag}, and \ref{fig:tracking_err}. While the MLQR controller
+	    dramatically out-performs HFCA, we found no significant difference in performance
+	    between MLQR and LQR using either roll-pitch-yaw Euler angles or a quaternion.
+	    Since the tracking controller only deals with relatively small state and attitude
+	    errors, this is unsurprising. Additionally, we found the MLQR controller ran
+        about 20x faster than the HFCA controller.
+
+	    \begin{figure*}[ht]
+	        \begin{minipage}{0.60\linewidth}
+                \centering
+                \includegraphics[height=6.6cm,width=\textwidth]{figures/mlqr_basin.tikz}
+                \caption{Basins of attraction of 4 stabilizing controllers for yaw and roll, calculated from 2000 sample points (shown in black). All points within each contour were successfully stabilized by the controller.}
+                \label{fig:mlqr_basin}
+            \end{minipage}
+	        \hspace{0.05\linewidth}
+            \begin{minipage}{0.34\linewidth}
+                \centering
+                \begin{tabular}{cc}
+                    \toprule
+                    \textbf{Method} & \textbf{Success} \\
+                    \midrule
+                    Quat & 61\% \\
+                    RPY  & 80\% \\
+                    HFCA & 97\% \\
+                    MLQR & 99\% \\
+                    \bottomrule
+                \end{tabular}
+                \caption{Success rate for Monte-Carlo analysis of quadrotor stabilization for 2000 initial conditions uniformly over position, orientation, and linear and angular velocities.}
+                \label{tab:mlqr_success}
+            \end{minipage}
+        \end{figure*}
+
+\section{Conclusions} \label{sec:conclusion}
+    We have presented a general, unified method for planning and control on rigid-body
+    systems with arbitrary attitude using standard linear algebra and vector calculus. By
+    applying these methods to LQR to correctly account for the group structure of
+    rotations, we have matched or exceeded the performance of a state-of-the-art
+    geometric controller designed specifically for quadrotors, while being more general,
+    requiring less system-dependent tuning, having less computational overhead, and being
+    easier to implement.
+    
+    We have also demonstrated a straight-forward way to adapt nonlinear trajectory
+    optimization techniques to work with quaternion-valued states. For these problems, we
+    found the geodesic distance between quaternions \eqref{eq:quat_geodesic} to be
+    computationally efficient and provide excellent convergence in practice. We recommend
+    the use of unit quaternions within planning and control algorithms for their
+    simplicity, computational efficiency, and lack of singularities. We further recommend
+    the use of Rodrigues parameters, or the Cayley map, as the quaternion error state.
+    
+    Future areas of research include the application of these methodologies to more
+    complex multi-body floating-base robots, such as humanoids and quadrupeds, as well as
+    more in-depth analysis of the convergence behavior of the algorithms proposed in the
+    current work.
+    
+\paragraph{Acknowledgements}
+This material is based upon work supported by the National Science Foundation Graduate
+Research Fellowship Program under Grant No. DGE-1656518. Any opinions, findings, and
+conclusions or recommendations expressed in this material are those of the author(s) and
+do not necessarily reflect the views of the National Science Foundation
+
+
+\printbibliography
 
 \end{document}
