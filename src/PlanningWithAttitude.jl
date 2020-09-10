@@ -2,15 +2,10 @@ module PlanningWithAttitude
 
 using StaticArrays
 using LinearAlgebra
-using Parameters
-using ForwardDiff
-using TrajectoryOptimization
-const TO = TrajectoryOptimization
-using Statistics
-using ControlSystems
-using JLD2
-# using Logging
-# using Formatting
+using Rotations
+using RobotDynamics
+
+include("vecmodel.jl")
 
 # include("logger.jl")
 # include("knotpoint.jl")
@@ -21,8 +16,8 @@ using JLD2
 # include("ilqr.jl")
 # include("attitude_costs.jl")
 
-include("rbstate.jl")
-include("plotting.jl")
-include("tracking_control.jl")
-include("lqr_monte_carlo.jl")
+# include("rbstate.jl")
+# include("plotting.jl")
+# include("tracking_control.jl")
+# include("lqr_monte_carlo.jl")
 end
