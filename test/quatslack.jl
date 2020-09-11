@@ -4,7 +4,7 @@ using Rotations
 using RobotDynamics
 using TrajectoryOptimization
 using Altro
-using StaticArrays
+using StaticArrays, LinearAlgebra
 using ForwardDiff
 import RobotZoo.Quadrotor
 const TO = TrajectoryOptimization
@@ -39,3 +39,30 @@ TO.jacobian!(∇c2, con, z)
 TO.jacobian!(∇c2, con, z2)
 @test ∇c[4:7] ≈ 2*Rotations.params(q)*s*s
 @test ∇c2 ≈ ∇c
+
+
+n,m = size(model)
+N,tf = 101, 5.0
+
+Q = Diagonal(RobotDynamics.fill_state(model, 1,10,10,10.))
+R = Diagonal(SA[1,1,1,1,100.]*1e-2)
+x0 = zeros(model)[1] 
+xf = RobotDynamics.build_state(model, 
+    RBState([2,1,0.5], expm(SA[0,0,1]*pi/4), zeros(3), zeros(3))
+)
+utrim = push(zeros(quad)[2],1)
+obj = LQRObjective(Q, R, (N-1)*Q, xf, N, uf=utrim)
+
+cons = ConstraintList(n,m,N)
+slack = UnitQuatConstraint(model)
+add_constraint!(cons, slack, 1:N-1)
+
+prob = Problem(model, obj, xf, tf, x0=x0, constraints=cons)
+initial_controls!(prob, utrim) 
+controls(prob)
+rollout!(prob)
+solver = ALTROSolver(prob)
+set_options!(solver, verbose=2, show_summary=true)
+solve!(solver)
+RBState(model, states(solver)[end]) ⊖ RBState(model, xf)
+controls(solver)

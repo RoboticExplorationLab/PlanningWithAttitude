@@ -40,7 +40,7 @@ UnitQuatConstraint(model::QuatSlackModel) = UnitQuatConstraint(size(model)...)
 
 Base.copy(con::UnitQuatConstraint) = UnitQuatConstraint(con.n, con.m, con.qind, con.sind)
 
-@inline TO.sense(::UnitQuatConstraint) = Equality()
+@inline TO.sense(::UnitQuatConstraint) = TO.Equality()
 @inline Base.length(::UnitQuatConstraint) = 1
 @inline RobotDynamics.state_dim(con::UnitQuatConstraint) = con.n
 @inline RobotDynamics.control_dim(con::UnitQuatConstraint) = con.m
