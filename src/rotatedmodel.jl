@@ -1,3 +1,19 @@
+struct QuatRenorm{R,RK,L} <: RD.RigidBody{R}
+    model::L
+    function QuatRenorm(model::RD.RigidBody{R}, rk::Type{<:RD.QuadratureRule}=RD.RK4) where R
+        new{R,rk,typeof(model)}(model)
+    end
+end
+RD.control_dim(model::QuatRenorm) = RD.control_dim(model.model)
+
+function RD.discrete_dynamics(::Type{RD.RK4}, 
+        model::QuatRenorm{<:Any,RD.RK4}, x::StaticVector, u::StaticVector, t, dt)
+    x2 = RD.discrete_dynamics(RD.RK4, model.model, x, u, t, dt)
+    # renormalize the quaternion
+    r,q,v,ω = RobotDynamics.parse_state(model.model, x2, true)
+    RobotDynamics.build_state(model.model, r,q,v,ω)
+end
+
 struct QuatSlackModel{R,M,L} <: RD.RigidBody{R} 
     model::L
     function QuatSlackModel(model::L) where L <: RD.RigidBody
@@ -48,18 +64,18 @@ Base.copy(con::UnitQuatConstraint) = UnitQuatConstraint(con.n, con.m, con.qind, 
 function TO.evaluate(con::UnitQuatConstraint, z::RD.AbstractKnotPoint) 
     q = z.z[con.qind]
     s = z.z[con.sind]
-    q̄ = q*s
+    q̄ = q
     return SA[dot(q̄,q̄) - 1]
 end
 
 function TO.jacobian!(∇c, con::UnitQuatConstraint, z::RD.AbstractKnotPoint)
     q = z.z[con.qind]
     s = z.z[con.sind]
-    q̄ = q*s
+    q̄ = q
     for (i,j) in enumerate(con.qind)
-        ∇c[1,j] = 2*q̄[i]*s
+        ∇c[1,j] = 2*q̄[i]
     end
-    ∇c[con.sind] = 2s*dot(q,q)
+    # ∇c[con.sind] = 2s*dot(q,q)
     return false
 end
 

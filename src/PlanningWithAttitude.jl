@@ -8,12 +8,14 @@ import TrajectoryOptimization
 const RD = RobotDynamics
 const TO = TrajectoryOptimization
 
-# include("vecmodel.jl")
 include("rotatedmodel.jl")
+include("vecmodel.jl")
 
 export
     QuatSlackModel,
-    UnitQuatConstraint
+    UnitQuatConstraint,
+    VecModel,
+    QuatRenorm
 
 # include("logger.jl")
 # include("knotpoint.jl")
