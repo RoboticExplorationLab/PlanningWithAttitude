@@ -3,9 +3,17 @@ module PlanningWithAttitude
 using StaticArrays
 using LinearAlgebra
 using Rotations
-using RobotDynamics
+import RobotDynamics
+import TrajectoryOptimization
+const RD = RobotDynamics
+const TO = TrajectoryOptimization
 
-include("vecmodel.jl")
+# include("vecmodel.jl")
+include("rotatedmodel.jl")
+
+export
+    QuatSlackModel,
+    UnitQuatConstraint
 
 # include("logger.jl")
 # include("knotpoint.jl")
