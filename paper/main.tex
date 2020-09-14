@@ -90,39 +90,42 @@ trajectory optimization problems, again demonstrating improved runtime performan
 \end{abstract}
 
 \section{INTRODUCTION}
-    Many useful robotic systems---including quadrotors, airplanes, satellites, autonomous 
-    underwater vehicles, and quadrupeds---can perform arbitrarily large three-dimensional 
-    translations and rotations as part of their normal operation. 
-    While representing translations is straightforward and intuitive, effectively 
-    representing the nontrivial group structure of 3D rotations has been a topic of study 
-    for many decades. Although we can intuitively deduce that rotations are three-dimensional, 
-    a globally non-singular three-parameter representation of the space of rotations does 
-    not exist \cite{stuelpnagel1964parametrization}. As a result, when parameterizing rotations, 
-    we must either a) pick a three-parameter representation and deal with discontinuities, 
-    or b) pick a higher-dimensional representation and deal with constraints between the 
-    parameters. While simply representing attitude is nontrivial, generating and tracking 
-    motion plans for floating-base systems is an even more challenging problem.
-    
-    Early work on control problems involving the rotation group dates back to the 1970s, 
-    with extensions of linear control theory to spheres \cite{Brockett1973} and $SO(3)$ 
-    \cite{Baillieul1978}. Effective attitude tracking controllers have been developed for 
-    satellites \cite{wie1985quaternion}, quadrotors \cite{Fresk2013,Liu2015,lee2010geometric,
-    Johnson2005,watterson2020control,mellinger2011minimum}, and a 3D inverted pendulum 
-    \cite{Chaturvedi2009}  using various methods for calculating three-parameter attitude 
-    errors. 
-    
-    More recently, these ideas have been extended to trajectory generation \cite{Zefran1998}, 
-    sample-based motion planning \cite{Zefran1999,Kuffner2004}, and optimal control. 
-    Approaches to optimal control on attitude problems include analytical methods applied to
-    satellites \cite{Spindler1998}, discrete mechanics \cite{Kobilarov2011,Kobilarov2014,
-    Lee2008}, a combination of sampling-based planning and constrained trajectory 
-    optimization for satellite formations \cite{Garcia2005, Aoude2008}, projection operators 
-    \cite{Saccon2013}, or more general theory for optimization on manifolds 
-    \cites{watterson2018trajectory}. 
-    Nearly all of these methods rely heavily on principles from differential geometry and 
-    Lie group theory; however, despite these works, many recent papers in the robotics 
-    community continue to apply traditional methods for motion planning and control with no 
-    regard for the group structure of rigid body motion \cite{Alothman2016,deCrousaz2015,
+
+    Many useful robotic systems---including quadrotors, airplanes, satellites, autonomous
+    underwater vehicles, and quadrupeds---can perform arbitrarily large three-dimensional
+    translations and rotations as part of their normal operation. While representing
+    translations is straightforward and intuitive, effectively representing the
+    nontrivial group structure of 3D rotations has been a topic of study for many
+    decades. Although we can intuitively deduce that rotations are three-dimensional, a
+    globally non-singular three-parameter representation of the space of rotations does
+    not exist \cite{stuelpnagel1964parametrization}. As a result, when parameterizing
+    rotations, we must either a) pick a three-parameter representation and deal with
+    discontinuities, or b) pick a higher-dimensional representation and deal with
+    constraints between the parameters. While simply representing attitude is nontrivial,
+    generating and tracking motion plans for floating-base systems is an even more
+    challenging problem.
+
+    Early work on control problems involving the rotation group dates back to the 1970s,
+    with extensions of linear control theory to spheres \cite{Brockett1973} and $SO(3)$
+    \cite{Baillieul1978}. Effective attitude tracking controllers have been developed for
+    satellites \cite{wie1985quaternion}, quadrotors
+    \cite{Fresk2013,Liu2015,lee2010geometric,
+    Johnson2005,watterson2020control,mellinger2011minimum}, and a 3D inverted pendulum
+    \cite{Chaturvedi2009} using various methods for calculating three-parameter attitude
+    errors.
+
+    More recently, these ideas have been extended to trajectory generation
+    \cite{Zefran1998}, sample-based motion planning \cite{Zefran1999,Kuffner2004}, and
+    optimal control. Approaches to optimal control on attitude problems include
+    analytical methods applied to satellites \cite{Spindler1998}, discrete mechanics
+    \cite{Kobilarov2011,Kobilarov2014, Lee2008}, a combination of sampling-based planning
+    and constrained trajectory optimization for satellite formations \cite{Garcia2005,
+    Aoude2008}, projection operators \cite{Saccon2013}, or more general theory for
+    optimization on manifolds \cites{watterson2018trajectory}. Nearly all of these
+    methods rely heavily on principles from differential geometry and Lie group theory;
+    however, despite these works, many recent papers in the robotics community continue
+    to apply traditional methods for motion planning and control with no regard for the
+    group structure of rigid body motion \cite{Alothman2016,deCrousaz2015,
     Williams2017,Geisert2016}.
     
     In this paper, we make a departure from previous approaches to geometric planning and 

@@ -1,6 +1,7 @@
 [deps]
 Altro = "5dcf52e5-e2fb-48e0-b826-96f46d2e3e73"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Blink = "ad839575-38b3-5650-b840-f874b8c74a25"
 ControlSystems = "a6e380b2-a6ca-5380-bf3e-84a91bcd477e"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
