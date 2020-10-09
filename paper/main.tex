@@ -364,18 +364,18 @@ linear algebra.
     
     Given known vectors in some inertial frame, $N$, and measurements of these vectors in some body fixed frame, $B$, we can define Wahba's loss function as the following:
     \begin{equation}
-        L = \sum_i w_i \| ^N v_i -  {}^N A(q){}^B\,\,  ^Bv_i \|_2^2.
+        L = \sum_i w_i \| ^N v_i -  {}^N A^B(q)\,\,  ^Bv_i \|_2^2.
     \end{equation}
     This is a nonlinear function of the attitude, which will be stored as a quaternion. For convenience, the following residual vector function will be defined:
     \begin{equation}
-        r_i = \sqrt{w_i} (^N v_i -  {}^N A(q){}^B\,\,  ^Bv_i ),
+        r_i = \sqrt{w_i} (^N v_i -  {}^N A{}^B(q)\,\,  ^Bv_i ),
     \end{equation}
     such that when these vectors are stacked in $r$, the loss function is a sum of squares. This problem now looks like a standard nonlinear least squares problem:
     \begin{mini*}
     {q}{ \|r(q)\|_2^2 }{}{}
     \addConstraint { q\in SO(3).}
     \end{mini*}
-     There are two methods for keeping the solution in the $SO(3)$, group, a projected and a multiplicative method. In a projected Gauss-Newton method, the Newton step is applied additively, and the resulting estimate is projected back onto $SO(3)$ with a normalization. This algorithm can be seen in algorithm \ref{alg:pgn}. 
+     There are two ways for keeping the solution in the $SO(3)$ group, a projected method and a multiplicative method. In a projected Gauss-Newton method, the Newton step is applied additively, and the resulting estimate is projected back onto $SO(3)$ with a normalization. This algorithm can be seen in algorithm \ref{alg:pgn}. 
     \begin{algorithm} 
     	\begin{algorithmic}[1]
     		\caption{Projected Gauss-Newton Method}\label{alg:pgn}
@@ -389,7 +389,7 @@ linear algebra.
     		\EndWhile
     	\end{algorithmic}
     \end{algorithm}
-    Where the $SO(3)$ projection operator is just a normalization. This method can successfully lower the loss function initially, but the normalization errors will prevent convergence. To get around this, the quaternion calculus presented in this paper can be used to generate a Newton step that is a three parameter rotation, one that can be applied multiplicatively. This method of applying the Newton step preserves the constraint satisfaction, and doesn't introduce any normalization errors.
+   This method can successfully lower the loss function initially, but the normalization errors will prevent convergence. To get around this, the quaternion calculus presented in this paper can be used to generate a Newton step that is a rotation instead of an addition. This method of applying the Newton step preserves the constraint satisfaction, and doesn't introduce any normalization errors.
     \begin{algorithm} 
     	\begin{algorithmic}[1]
     		\caption{Multiplicative Gauss-Newton Method}\label{alg:mgn}
@@ -410,7 +410,7 @@ linear algebra.
     \begin{figure}
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
-        \caption{Convergence comparison for Wahbas problem. By performing Newton's method
+        \caption{Convergence comparison for Wahba's problem. By performing Newton's method
         on the error quaternion and applying the result to the full quaternion we achieve
         quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
         error.}
