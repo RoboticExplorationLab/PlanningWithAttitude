@@ -17,8 +17,8 @@ const TO = TrajectoryOptimization
 
 
 # Discretization
-tf = 150.0
-N = 501
+tf = 100.0
+N = 401
 dt = tf/(N-1)
 
 # Model
@@ -56,43 +56,36 @@ SA[ dot(dcm_from_q(x[4:7])*con.bodyvec,con.keepoutdir)-cosd(con.keepoutangle)])
 
 # Initial and final states
 ω = @SVector zeros(3)
-# q0 = Rotations.params(UnitQuaternion(I))
 q0 = Rotations.params(expm(deg2rad(150) * normalize(@SVector [1,2,3])))
-# qf = Rotations.params(expm(deg2rad(90) * normalize(@SVector rand(3))))
 qf = Rotations.params(UnitQuaternion(I))
-# q0 = @SVector [.5,.5,.5,.5]
-# qf = normalize(@SVector [0.0258,0.0258,0.9990,0.0258])
 r0 = zeros(4)
 x0 = [ω; q0;zeros(3);zeros(3);r0]
 xf = [ω; qf;zeros(3);zeros(3);r0]
 
 # Objective
-Q = Diagonal(@SVector [10,10,10,100000,100000,100000,100000,10,10.0,10,10,10,10,0,0,0,0])
-R = Diagonal(@SVector fill(0.00001, m))
+Q = Diagonal(@SVector [10,10,10,100,100,100,100,10,10.0,10,10,10,10,0,0,0,0])
+R = Diagonal(@SVector fill(1.0, m))
 Qf = Q
 obj = LQRObjective(Q,R,Qf,xf,N)
 
 # constaint
 cons =  ConstraintList(n,m,N)
-bnd = BoundConstraint(n,m, u_min=-0.2, u_max=.2)
-add_constraint!(cons,bnd,1:N)
+bnd = BoundConstraint(n,m, u_min=-.5, u_max=.5)
+add_constraint!(cons,bnd,1:N-1)
 
 ## keep out
 keepoutdir = @SVector [1.0,0,0]
 bodyvec = @SVector [0.360019,-0.92957400,0.07920895]
-# bodyvec = @SVector [0.661490,-0.67104348,0.334858278]
-# keepoutdir = @SVector [0,0,1.0]
-# bodyvec = @SVector [0.75,0.433,0.5]
 keepout = AttitudeKeepOut( n, keepoutdir, bodyvec, 40.0 )
 
 add_constraint!(cons,keepout,1:N)
 
 
 
-prob = Problem(model, obj, xf, tf, x0=x0,constraints = cons,N=N)
+prob = Problem(model, obj, xf, tf, x0=x0,constraints = cons,N=N;integration=RK4)
 
 solver = ALTROSolver(prob)
-solver.opts.projected_newton = false
+solver.opts.projected_newton = true
 solver.solver_al.opts.verbose = true
 set_options!(solver, iterations = 4000)
 set_options!(solver,constraint_tolerance = 1e-4)
@@ -115,15 +108,28 @@ end
 mat"
 figure
 hold on
-plot(rad2deg($θ_hist))
+title('Pointing Error')
+ylabel('Pointing Error (Degrees)')
+xlabel('Time (s)')
+plot(0.0:$dt:(($N-2)*$dt),rad2deg($θ_hist))
 hold off
 "
 
 mat"
 figure
 hold on
-title('Angle from Sun (Unconstrained)')
-a = area([0 200],[40 40]);
+ylabel('Torque (Nm)')
+xlabel('Time (s)')
+title('Controls')
+plot(0.0:$dt:(($N-2)*$dt),$u_hist')
+hold off
+"
+
+mat"
+figure
+hold on
+title('Angle from Sun (Constrained)')
+a = area([0 100],[40 40]);
 a(1).FaceColor = [1 0.8 0.8];
 plot((0:($N-2))*$dt,$keepout_truth,'b','linewidth',2)
 legend('Keep Out Zone','Trajectory')
