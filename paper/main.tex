@@ -136,7 +136,7 @@ linear algebra.
     approach, enabling straight-forward adaptation of 
     existing algorithms to systems with quaternion states. 
     To make this concrete, in Sec. \ref{sec:Wahbas} we apply this method to the canonical
-    Wahbas problem and demonstrate dramatically superior convergence to approaches that
+    Wahba's problem and demonstrate dramatically superior convergence to approaches that
     fail to properly account for the group structure. 
     In Sec. \ref{sec:trajopt} we extend these ideas to the problem of trajectory optimization,
     and detail modifications to ALTRO, a state-of-the-art constrained trajectory optimization
@@ -357,10 +357,54 @@ linear algebra.
 
 
 \section{Modifying Newton's Method} \label{sec:Wahbas}
-    Brief background and description of the problem.
+    Newton's method uses derivative information about a function to iteratively approximate it's roots. For unconstrained systems, this method is highly effective, and can exhibit quadratic convergence.  For constrained systems, the updated parameter can be projected back onto the feasible set at each iteration, but without the same convergence guarantees. For the constraints on $SO(3)$, Newton's method struggles to converge past a certain threshold due to this projection. By leveraging the quaternion calculus introduced, Newton's method can be modified to implicitly account for these constraints. To demonstrate this, we will examine Wahba's Problem. In 1965, Grace Wahba proposed the criterion for a least squares estimate of a spacecraft's attitude from vector measurements \cite{markley2014fundamentals}. We will solve this problem using a standard nonlinear least squares method, as well as a method that exploits the true group structure of $SO(3)$ using the quaternion calculus presented here. 
+    
 
     \subsection{Methodology}
-    Brief description of using Newton's method to solve the batch version of Wahbas problem.
+    
+    Given known vectors in some inertial frame, $N$, and measurements of these vectors in some body fixed frame, $B$, we can define Wahba's loss function as the following:
+    \begin{equation}
+        L = \sum_i w_i \| ^N v_i -  {}^N A(q){}^B\,\,  ^Bv_i \|_2^2.
+    \end{equation}
+    This is a nonlinear function of the attitude, which will be stored as a quaternion. For convenience, the following residual vector function will be defined:
+    \begin{equation}
+        r_i = \sqrt{w_i} (^N v_i -  {}^N A(q){}^B\,\,  ^Bv_i ),
+    \end{equation}
+    such that when these vectors are stacked in $r$, the loss function is a sum of squares. This problem now looks like a standard nonlinear least squares problem:
+    \begin{mini*}
+    {q}{ \|r(q)\|_2^2 }{}{}
+    \addConstraint { q\in SO(3).}
+    \end{mini*}
+     There are two methods for keeping the solution in the $SO(3)$, group, a projected and a multiplicative method. In a projected Gauss-Newton method, the Newton step is applied additively, and the resulting estimate is projected back onto $SO(3)$ with a normalization. This algorithm can be seen in algorithm \ref{alg:pgn}. 
+    \begin{algorithm} 
+    	\begin{algorithmic}[1]
+    		\caption{Projected Gauss-Newton Method}\label{alg:pgn}
+    		\State $k = 0$
+    		\While{significant progress}
+    		    \State $J = \frac{\partial r(q_k)}{ \partial q}$ 
+    		    \State $ q_{step} = -(J^TJ)^{-1}J^T r(q_k)$ 
+    		  %  \State $q_{n+1} = \text{normalize}(q_n + q_{step})$ 
+    		  \State $q_{k+1} = \Pi_{SO(3)}(q_k + q_{step})$ 
+    		    \State $k = k + 1$
+    		\EndWhile
+    	\end{algorithmic}
+    \end{algorithm}
+    Where the $SO(3)$ projection operator is just a normalization. This method can successfully lower the loss function initially, but the normalization errors will prevent convergence. To get around this, the quaternion calculus presented in this paper can be used to generate a Newton step that is a three parameter rotation, one that can be applied multiplicatively. This method of applying the Newton step preserves the constraint satisfaction, and doesn't introduce any normalization errors.
+    \begin{algorithm} 
+    	\begin{algorithmic}[1]
+    		\caption{Multiplicative Gauss-Newton Method}\label{alg:mgn}
+    		\State $k = 0$
+    		\While{significant progress}
+    		    \State $J = [\frac{\partial r(q_k)}{ \partial q}]G(q_k)$ \Comment{quaternion adjusted Jacobian}
+    		    \State $ \phi_{step} = -(J^TJ)^{-1}J^T r(q_k)$ 
+    		    \State $q_{step} = \varphi(\phi_{step})$ 
+    		    \State $q_{k+1} = q_n \otimes q_{step}$ \Comment{apply step multiplicatively}
+    		    \State $k = k + 1$
+    		\EndWhile
+    	\end{algorithmic}
+    \end{algorithm}
+
+
 
     \subsection{Results}
     \begin{figure}
@@ -371,6 +415,7 @@ linear algebra.
         quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
         error.}
     \end{figure}
+
 
 \section{Trajectory Optimization on $\R^n \times SO(3)$}
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro}, to
