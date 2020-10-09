@@ -370,9 +370,10 @@ linear algebra.
         on the error quaternion and applying the result to the full quaternion we achieve
         quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
         error.}
+        \label{fig:wahba_convergence}
     \end{figure}
 
-\section{Trajectory Optimization on $\R^n \times SO(3)$}
+\section{Trajectory Optimization on $\R^n \times SO(3)$} \label{sec:trajopt}
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro}, to
     solve trajectory optimization problems for rigid bodies, which extends easily to
     arbitrary systems in $R^n \times SO(3)$. ALTRO is an efficient solver for constrained
@@ -512,7 +513,7 @@ linear algebra.
                 \end{bmatrix}.
             \end{equation}
 
-        \subsubsection{Geodesic Distance}
+        \subsubsection{Geodesic Distance} \label{sec:geodesic}
             Alternatively, we can use the geodesic distance between two quaternions
             \cite{Kuffner2004},
             \begin{equation} \label{eq:quat_geodesic}
@@ -527,6 +528,16 @@ linear algebra.
 
 
 \section{Experiments} \label{sec:experiments}
+    In this section we present several trajectory optimization problems for systems that
+    undergo large changes in attitude: an airplane barrell roll, a quadrotor flip, and a
+    satellite with flexible modes that must slew to a new orientation while avoiding a 
+    ``keep out'' orientation zone. All results were run on a desktop computer with an 
+    AMD Ryzen 2950x processor with 40 GB of RAM. 
+    All problems are run using ALTRO, first without any of the modification presented 
+    in the current paper, labeled ``original'', and then using the modifications listed
+    in Sec. \ref{sec:trajopt} and the geodesic cost funtion described in Sec. \ref{sec:geodesic}.
+    Timing results are summarized in Table \ref{tab:timing_results}.
+    All experiments were solved to a constraint satisfaction tolerance of $10^{-5}$.
     Code for all experiments is available on 
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
     {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
@@ -538,24 +549,7 @@ linear algebra.
         \caption{Trajectory Optimization Timing Results}
     \end{table}
         
-    \subsection{Trajectory Optimization}
-        In this section we present several trajectory optimization problems solved using
-        our modified version of ALTRO. The two quadrotor examples use 101 knot points for
-        5 second trajectories, and the airplane example uses 51 knot points for a 1.25
-        second trajectory. All results were run on a desktop computer with an Intel
-        i9-9900 3.10 GHz processor with 32GB of memory. Timing results for all three
-        experiments are given in Fig. \ref{fig:timing_chart}.
-        
-        In all examples, MLQR is implemented with a unit quaternion attitude state and
-        Rodrigues parameters as the error state. The first example compares the two cost
-        functions given in Sec. \ref{sec:cost_functions}, while the last two use the
-        geodesic quaternion cost and compare iterative MLQR (iMLQR) from Sec.
-        \ref{sec:MLQR} to iLQR using roll-pitch-yaw Euler angles following the convention
-        from \cite{michael2010grasp}, and quaternions (treating them na\"ively as
-        vectors). All examples re-normalize the quaternion in the dynamics function and
-        use a third-order explicit Runge-Kutta integrator.
-        
-        \subsection{Satellite Attitude Keep-Out}
+    \subsection{Satellite Attitude Keep-Out}
         \begin{figure}
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
@@ -563,16 +557,17 @@ linear algebra.
         \end{figure}
 
 
-        \subsection{Airplane Barrel Roll}
+    \subsection{Airplane Barrel Roll}
+
         An airplane model with aerodynamic coefficients fit from real wind-tunnel data is
         tasked to do a barrel roll by setting a high terminal cost for being upside-down,
         see Fig. \ref{fig:barrellroll}. The solver is initialized with level flight trim
-        conditions. For both the quadrotor flip and the airplane barrel roll, iMLQR
-        converged faster than the pure quaternion version. Despite the extra matrix
-        multiplications and extra Hessian term, it also was faster per iteration than its
-        iLQR counterpart. For these highly aerobatic maneuvers, we achieve, as expected,
-        better performance by correctly leveraging the structure of the rotation group
-        during the optimization routine.
+        conditions. The convergence of the different versions is compared in Fig.
+        \ref{fig:c_max_convergence}. For both the quadrotor flip and the airplane barrel
+        roll, the modified version of ALTRO converged faster than original version.
+        For these highly aerobatic maneuvers, we achieve, as expected, better
+        performance by correctly leveraging the structure of the rotation group during
+        the optimization routine.
         
         \begin{figure}[h]
             \centering
@@ -590,18 +585,23 @@ linear algebra.
             \label{fig:c_max_convergence}
         \end{figure}
 
-        \subsubsection{Quadrotor Flip}
+    \subsection{Quadrotor Flip}
         We sucessfully optimized a 360 degree flip trajectory for a quadrotor using the 
         modified version of ALTRO.
 	    Four intermediary knotpoints were used to encourage the quadrotor to be at angles
-	    of \ang{90}, \ang{180}, \ang{270}, and \ang{360}. The quadrotor was constrained
+        of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around an approximately circular arc.
+        The quadrotor was constrained
 	    to stay above the floor and move to a goal state 2 meters away in the $+y$
-	    direction. The solver is initialized with a dynamically infeasible trajectory
+	    direction. The solver was initialized with a dynamically infeasible trajectory
 	    that linearly interpolates between the initial and final states, rotating the
-	    quad around the x-axis a full \ang{360}.
-	    
+        quad around the x-axis a full \ang{360}.
+
 	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
-	    ALTRO.  t
+        ALTRO. The original version of ALTRO, even after significant tuning efforts,
+        would not converge to the desired solution. It instead got halfway and then ``unwound''
+        360 degrees and then continued rotating to the final orientation. This behavior
+        is common and expected when attempting optimization that does not properly account 
+        for the grou structure of rotations.
 
             \begin{figure}[t]
                 \centering
@@ -616,26 +616,31 @@ linear algebra.
 
 \section{Conclusions} \label{sec:conclusion}
     We have presented a general, unified method for planning and control on rigid-body
-    systems with arbitrary attitude using standard linear algebra and vector calculus. By
-    applying these methods to LQR to correctly account for the group structure of
-    rotations, we have matched or exceeded the performance of a state-of-the-art
-    geometric controller designed specifically for quadrotors, while being more general,
-    requiring less system-dependent tuning, having less computational overhead, and being
-    easier to implement.
+    systems with arbitrary attitude using standard linear algebra and vector calculus.
+    We have demonstrated that the application of this methodology is straightforward and
+    yields substantion improvements in the convergence of Newton-based methods (see Fig. 
+    \ref{fig:wahba_convergence}) while also offering improvements for nonlinear constrained
+    trajectory optimization for floating-base systems (see Table \ref{tab:timing_results}).
     
-    We have also demonstrated a straight-forward way to adapt nonlinear trajectory
-    optimization techniques to work with quaternion-valued states. For these problems, we
-    found the geodesic distance between quaternions \eqref{eq:quat_geodesic} to be
-    computationally efficient and provide excellent convergence in practice. We recommend
-    the use of unit quaternions within planning and control algorithms for their
-    simplicity, computational efficiency, and lack of singularities. We further recommend
-    the use of Rodrigues parameters, or the Cayley map, as the quaternion error state.
+    With the modifications presented, ALTRO can solve problems few other methods for 
+    trajectory optimization can. Many state-of-the-art methods such as direct 
+    collocation or sequential convex programming rely on commercial, proprietary, or 
+    general-purpose solvers whose internal numerics often abstracted away from the user. 
+    By exploiting both the unique Markovian structure of the trajectory optimization problem
+    and the group structure of rotations, ALTRO will likely be able to solve new classes of 
+    problems with at or near real-time performance. Future work will focus on continued 
+    refinement of the implementation and benchmarking against current state-of-the-art 
+    methods for trajectory optimization.
+
+    Additionally, the methods presented here can easily be leveraged to adapt other classes
+    of gradient or Newton-based algorithms to exploit the structure of 3D rotations. Future
+    work may include adaptation of methods for state estimation, localization, design, or 
+    other methods for motion planning such as direct collocation. 
     
-    Future areas of research include the application of these methodologies to more
-    complex multi-body floating-base robots, such as humanoids and quadrupeds, as well as
-    more in-depth analysis of the convergence behavior of the algorithms proposed in the
-    current work.
-    
+    Future work will also include the application of these methods to multi-body robotic
+    systems, such as humanoids or quadrupeds, especially in methods that exploit 
+    ``maximal'' coordinates that include the 3D orientation of each body \cite{brudigam2020linear}. 
+
 \paragraph{Acknowledgements}
 This material is based upon work supported by the National Science Foundation Graduate
 Research Fellowship Program under Grant No. DGE-1656518. Any opinions, findings, and
