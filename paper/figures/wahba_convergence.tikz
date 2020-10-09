@@ -1,0 +1,473 @@
+\begin{tikzpicture}
+\begin{axis}[xlabel={iterations}, ylabel={Angle Error (degrees)}, ymode=log, xmajorgrids, ymajorgrids, legend style={at={(0.1,0.1)},anchor=south west}]
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999993)
+            (2,0.35921644555249366)
+            (3,0.012372912099318064)
+            (4,0.0004836598187562752)
+            (5,1.8478375773018318e-5)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999993)
+            (2,0.11669935725938732)
+            (3,0.0005797135713761012)
+            (4,4.818014508605691e-6)
+            (5,7.065110131156274e-8)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.00000000000001)
+            (2,0.33275593268275866)
+            (3,0.011653179912536062)
+            (4,0.0004185624268188859)
+            (5,1.4997559803757273e-5)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.0)
+            (2,0.5537683639551743)
+            (3,0.021520858336810278)
+            (4,0.0008886072327409828)
+            (5,3.6261626477663654e-5)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999996)
+            (2,0.21201450126153396)
+            (3,0.005170795535115526)
+            (4,0.00013489225004982656)
+            (5,3.4911213304545628e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.0)
+            (2,0.16130272498625936)
+            (3,0.001983785973134308)
+            (4,2.6369870221753613e-5)
+            (5,4.2202810076890815e-7)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.3008662505478972)
+            (3,0.007408421405253346)
+            (4,0.00019949268810283508)
+            (5,5.372083397545785e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000004)
+            (2,0.27283896059802526)
+            (3,0.008954516085478974)
+            (4,0.000346050621707329)
+            (5,1.5623957609084567e-5)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999993)
+            (2,0.22076749654339434)
+            (3,0.003610760728910779)
+            (4,5.996965177467978e-5)
+            (5,9.976862475648344e-7)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000002)
+            (2,0.22862071849199472)
+            (3,0.0056894791500020836)
+            (4,0.00014701945570669167)
+            (5,3.818166554294901e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.25081835002417496)
+            (3,0.0040475837556285055)
+            (4,8.369888844748404e-5)
+            (5,1.8122072979649693e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999991)
+            (2,0.30521554355252356)
+            (3,0.007587894511572214)
+            (4,0.00018853142066148774)
+            (5,4.690297340892373e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999996)
+            (2,0.16497136072782725)
+            (3,0.0033476921972630047)
+            (4,8.918152347038662e-5)
+            (5,2.296622654610196e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999993)
+            (2,0.09921378274127497)
+            (3,0.0006199042922394583)
+            (4,8.39771203953326e-6)
+            (5,1.3605896537845037e-7)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.0)
+            (2,0.1318134914103095)
+            (3,0.001127886449109657)
+            (4,1.605670463148498e-5)
+            (5,2.9982894581223423e-7)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000005)
+            (2,0.27650812682810394)
+            (3,0.004668308644046357)
+            (4,7.933157131988369e-5)
+            (5,1.4280084482860209e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.36823042024639413)
+            (3,0.010392636921028712)
+            (4,0.00028913522947063866)
+            (5,8.553782083882672e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000002)
+            (2,0.1133033447875821)
+            (3,0.0019454911374207778)
+            (4,3.561945120742167e-5)
+            (5,7.70162880031306e-7)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.3760095397155683)
+            (3,0.011676078668090159)
+            (4,0.0003621654356682595)
+            (5,1.1282415338351312e-5)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000002)
+            (2,0.17964694202944465)
+            (3,0.0031458380712337804)
+            (4,5.158579022799326e-5)
+            (5,8.985416466044543e-7)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.0)
+            (2,0.2159739638021606)
+            (3,0.003666840456897383)
+            (4,6.291369768828219e-5)
+            (5,1.188675348140407e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.0)
+            (2,0.3959085444020736)
+            (3,0.012291143301541305)
+            (4,0.0003946804764948396)
+            (5,1.2774380160325293e-5)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999991)
+            (2,0.29456115735253835)
+            (3,0.005907340682801501)
+            (4,0.00012118688078040572)
+            (5,2.50658402494198e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.2692216161381305)
+            (3,0.006814821930448367)
+            (4,0.00019669365709083634)
+            (5,5.680092476527546e-6)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000005)
+            (2,0.23190666312372668)
+            (3,0.003941788329573076)
+            (4,6.633445731149014e-5)
+            (5,1.148943996995505e-6)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999991)
+            (2,0.6437220210669353)
+            (3,0.39088528351304214)
+            (4,0.3901328569357848)
+            (5,0.3900514349611174)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000004)
+            (2,0.3995219240416084)
+            (3,0.1452993980108395)
+            (4,0.14529939801085073)
+            (5,0.14529939801085073)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.6071957715262624)
+            (3,0.11130030750194982)
+            (4,0.11130030750194786)
+            (5,0.11130030750194786)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999996)
+            (2,1.4304499867480558)
+            (3,0.6542040369878156)
+            (4,0.6460002257927605)
+            (5,0.6459533119167408)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000005)
+            (2,0.3455906686733401)
+            (3,0.12582664985873251)
+            (4,0.12582664985873251)
+            (5,0.12582664985873251)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000005)
+            (2,0.6999857920496967)
+            (3,0.5540628787377173)
+            (4,0.5540628787377173)
+            (5,0.5540628787377173)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999991)
+            (2,0.24365266231740348)
+            (3,0.21207256268380945)
+            (4,0.21207256268381297)
+            (5,0.21207256268381297)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,1.436244502855999)
+            (3,1.0434859139701793)
+            (4,1.0379552200308546)
+            (5,1.037884031686628)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000004)
+            (2,0.06922511259035852)
+            (3,0.05052918902074055)
+            (4,0.049876855526673994)
+            (5,0.0498768555267225)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999995)
+            (2,0.5384603883745294)
+            (3,0.25445677888554996)
+            (4,0.25414466232955973)
+            (5,0.25411041010437463)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000018)
+            (2,0.45837954073148807)
+            (3,0.17471797374318648)
+            (4,0.17169173364249868)
+            (5,0.17166182823096068)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999995)
+            (2,1.861903953056728)
+            (3,0.8316927968759742)
+            (4,0.8088006747224586)
+            (5,0.8074448920327101)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000002)
+            (2,1.0557820249906442)
+            (3,0.43801518125113803)
+            (4,0.430839452890379)
+            (5,0.4307341546775361)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.7458691644041577)
+            (3,0.2886796704874402)
+            (4,0.28867967048745463)
+            (5,0.28867967048745463)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999993)
+            (2,0.3306046433842782)
+            (3,0.08128315037905089)
+            (4,0.08128315037912012)
+            (5,0.08128315037926119)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999991)
+            (2,0.28338033698835297)
+            (3,0.0920690057282732)
+            (4,0.09152251496822468)
+            (5,0.09151634788686823)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000002)
+            (2,0.45405874631643084)
+            (3,0.0768590980348833)
+            (4,0.0715645323873851)
+            (5,0.0715645323873664)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000004)
+            (2,0.9081871126287111)
+            (3,0.569115319302219)
+            (4,0.5651996138157016)
+            (5,0.5651343587452533)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999996)
+            (2,0.9584588783874836)
+            (3,0.08790340976111988)
+            (4,0.08028095775702863)
+            (5,0.08013925109305574)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000004)
+            (2,0.11868933476293814)
+            (3,0.007287808594388483)
+            (4,0.006802974045377831)
+            (5,0.006802974047109775)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999995)
+            (2,0.48957632068092427)
+            (3,0.401444426664189)
+            (4,0.401444426664189)
+            (5,0.401444426664189)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999991)
+            (2,0.7168242561286465)
+            (3,0.1096947451910787)
+            (4,0.10706719135624874)
+            (5,0.10704041012532094)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,9.999999999999995)
+            (2,0.056702207131111855)
+            (3,0.04183079947455674)
+            (4,0.04183079947476263)
+            (5,0.04183079947476464)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.0)
+            (2,0.7236491786760438)
+            (3,0.22930381453519694)
+            (4,0.22870600823840487)
+            (5,0.22868530928181513)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
+        coordinates {
+            (1,10.000000000000005)
+            (2,0.24446043114835644)
+            (3,0.16692664824034892)
+            (4,0.1668909548984641)
+            (5,0.166888392446865)
+        }
+        ;
+    \addplot+[color={cyan}, no marks, line width=3pt]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.6328229983864194)
+            (3,0.28555787389733683)
+            (4,0.28277105092545574)
+            (5,0.28269153355796706)
+        }
+        ;
+    \addplot+[color={orange}, no marks, line width=3pt]
+        coordinates {
+            (1,9.999999999999998)
+            (2,0.2572861439504301)
+            (3,0.006405026885873189)
+            (4,0.00019019819707593173)
+            (5,6.199994320168363e-6)
+        }
+        ;
+    \legend{{original},{modified}}
+\end{axis}
+\end{tikzpicture}
