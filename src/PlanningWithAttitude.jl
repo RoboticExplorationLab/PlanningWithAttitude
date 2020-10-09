@@ -12,14 +12,16 @@ const TO = TrajectoryOptimization
 
 # include("rotatedmodel.jl")
 include("vecmodel.jl")
-include("airplane_problem.jl")
 include("quat_cons.jl")
 include("quat_costs.jl")
 include("quat_norm.jl")
+include("airplane_problem.jl")
+include("quadflip_problem.jl")
 
 export
     VecModel,
     YakProblems,
+    QuadFlipProblem,
     QuatGeoCon,
     QuatErr,
     QuatVecEq,

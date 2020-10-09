@@ -4,6 +4,7 @@ import RobotZoo.Quadrotor
 using TrajectoryOptimization
 using Altro
 using BenchmarkTools
+using LaTeXTabulars
 const TO = TrajectoryOptimization
 const RD = RobotDynamics
 
@@ -64,6 +65,7 @@ run_example(costfun=:ErrorQuadratic; args...)
 ## Plots
 @load "cost_comparison.jld2" cost_comparison
 using Plots
+using PGFPlotsX 
 pgfplotsx()
 
 # Append initial constraint violation for plot
@@ -77,12 +79,55 @@ end
 is_outer = map(cost_comparison[:is_outer]) do iters
     Bool.(insert!(diff(iters),1,0))
 end
+y = cost_comparison[:c_max][1]
+y2 = cost_comparison[:c_max][3]
+x = 1:length(y)
 
-p = plot(cost_comparison[:c_max][1], label="original")
-plot!(cost_comparison[:c_max][3], label="modified",
-    xlabel="iteration", ylabel="constraint violation", yscale=:log10
+p = @pgf Axis(
+    {
+        xlabel="iterations",
+        ylabel="contraint satisfaction",
+        "ymode=log",
+        xmajorgrids,
+        ymajorgrids,
+    },
+    Plot(
+        {
+            color="cyan",
+            no_marks,
+            "very thick"
+        },
+        Coordinates(x,y)
+    ),
+    PlotInc(
+        {
+            color="orange",
+            no_marks,
+            "very thick"
+        },
+        Coordinates(1:length(y2), y2)
+    ),
+    Legend("original","modified")
 )
-savefig(p, "figs/c_max_convergence.tikz")
+pgfsave("paper/figures/c_max_convergence.tikz", p, include_preamble=false)
+
+# Export the table
+using DataFrames
+df = DataFrame(cost_comparison)
+df.time .= round.(df.time/1e6, digits=2)
+tab = df[:,[:costfun,:iters,:time]]
+tab.costfun = String.(tab.costfun)
+latex_tabular("paper/figures/cost_comparison.tex",
+    Tabular("lll"),
+    [
+        Rule(:top),
+        ["Cost Function", "Iterations", "time"],
+        Rule(:mid),
+        Matrix(tab),
+        Rule(:bottom)
+    ]
+)
+# savefig(p, "figs/c_max_convergence.tikz")
 
 ## 
 """

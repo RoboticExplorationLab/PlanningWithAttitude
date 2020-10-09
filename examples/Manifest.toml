@@ -547,6 +547,12 @@ git-tree-sha1 = "c7aebfecb1a60d59c0fe023a68ec947a208b1e6b"
 uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 version = "1.2.0"
 
+[[LaTeXTabulars]]
+deps = ["ArgCheck", "DocStringExtensions", "Parameters"]
+git-tree-sha1 = "e19c49a2b18b8e98588f666a06bea0c5d3e7b0a6"
+uuid = "266f59ce-6e72-579c-98bb-27b39b5c037e"
+version = "0.1.1"
+
 [[LabelledArrays]]
 deps = ["ArrayInterface", "LinearAlgebra", "MacroTools", "StaticArrays"]
 git-tree-sha1 = "5e04374019448f8509349948ab504f117e3b575a"

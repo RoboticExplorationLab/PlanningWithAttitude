@@ -1,10 +1,12 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Blink = "ad839575-38b3-5650-b840-f874b8c74a25"
+Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 ControlSystems = "a6e380b2-a6ca-5380-bf3e-84a91bcd477e"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+LaTeXTabulars = "266f59ce-6e72-579c-98bb-27b39b5c037e"
 LazySets = "b4f0291d-fe17-52bc-9479-3d1a343d9043"
 MeshCat = "283c5d60-a78f-5afe-a0af-af636b173e11"
 MeshIO = "7269a6da-0436-5bbc-96c2-40638cbb6118"
