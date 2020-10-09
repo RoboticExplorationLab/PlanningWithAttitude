@@ -14,9 +14,9 @@ using LinearAlgebra
 using MeshCat
 using Rotations
 
-
+##
 function gen_quad_flip(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=false, 
-        renorm::Bool=false)
+        renorm::Bool=false, costfun=LQRCost)
     model = Quadrotor{Rot}()
     if renorm
         model = QuatRenorm(model)
@@ -60,6 +60,11 @@ function gen_quad_flip(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=fal
     ]
     # times = [35, 41, 47, 51, 55, 61, 70, 101]
     times = [45, 51, 55, 75, 101]
+
+    """
+    Costs
+    """
+    # intermediate costs
     Qw_diag = RobotDynamics.build_state(model, 
         [1e3,1e1,1e3], 
         (@SVector fill(5e4,rsize)), 
@@ -67,8 +72,9 @@ function gen_quad_flip(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=fal
     )
     Qf_diag = RobotDynamics.fill_state(model, 10., 100, 10, 10)
     xf = RobotDynamics.build_state(model, wpts[end][1], wpts[end][2], zeros(3), zeros(3))
-    cost_nom = LQRCost(Diagonal(Q_diag), R, xf)
+    cost_nom = costfun(Diagonal(Q_diag), R, xf)
 
+    # waypoint costs
     costs = map(1:length(wpts)) do i
         r,q = wpts[i]
         xg = RobotDynamics.build_state(model, r, q, v_nom, [2pi/3, 0, 0])
@@ -79,7 +85,7 @@ function gen_quad_flip(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=fal
             Q = Diagonal(1e-3*Qw_diag)
             w = 100.
         end
-        LQRCost(Q, R, xg)
+        costfun(Q, R, xg)
     end
 
     costs_all = map(1:N) do k
@@ -90,13 +96,11 @@ function gen_quad_flip(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=fal
             cost_nom
         end
     end
-
     obj = Objective(costs_all)
 
     # Constraints
     conSet = ConstraintList(n,m,N)
-    noquat = deleteat(SVector{13}(1:13),4) 
-    add_constraint!(conSet, GoalConstraint(xf, SA[1,2,3]), N:N)
+    add_constraint!(conSet, GoalConstraint(xf, SA[1,2,3,8,9,10]), N:N)
     xmin = fill(-Inf,n)
     xmin[3] = 0.0
     bnd = BoundConstraint(n,m, x_min=xmin)
@@ -116,7 +120,6 @@ function gen_quad_flip(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=fal
     # Initialization
     u0 = zeros(quad)[2] 
     U_hover = [copy(u0) for k = 1:N-1] # initial hovering control trajectory
-    # U_hover = [copy(u0) for k = 1:N-1] # initial hovering control trajectory
 
     # Problem
     prob = Problem(quad, obj, xf, tf, x0=x0, constraints=conSet, integration=RK4)
@@ -141,14 +144,16 @@ opts = SolverOptions(
     cost_tolerance=1e-5,
     cost_tolerance_intermediate=1e-5,
     constraint_tolerance=1e-4,
-    projected_newton_tolerance=1e-3,
+    projected_newton_tolerance=1e-2,
     iterations_outer=40,
     penalty_scaling=10.,
     penalty_initial=0.1,
     show_summary=false,
     verbose=0
 )
-prob = gen_quad_flip(UnitQuaternion, slack=false, vecmodel=false, renorm=false)
+prob = gen_quad_flip(UnitQuaternion, slack=false, vecmodel=false, renorm=true,
+    costfun=QuatLQRCost
+)
 solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, show_summary=true)
 solve!(solver)
 visualize!(vis, quad, get_trajectory(solver))

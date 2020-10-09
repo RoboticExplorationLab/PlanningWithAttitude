@@ -35,15 +35,16 @@ struct DiagonalQuatCost{N,M,T,N4} <: QuadraticCostFunction{N,M,T}
     q_ref::SVector{4,T}
     q_ind::SVector{4,Int}
     Iq::SMatrix{N,4,T,N4}
+    terminal::Bool
     function DiagonalQuatCost(Q::Diagonal{T,SVector{N,T}}, R::Diagonal{T,SVector{M,T}},
             q::SVector{N,T}, r::SVector{M,T}, c::T, w::T,
-            q_ref::SVector{4,T}, q_ind::SVector{4,Int}) where {T,N,M}
+            q_ref::SVector{4,T}, q_ind::SVector{4,Int}; terminal::Bool=false) where {T,N,M}
         Iq = @MMatrix zeros(N,4)
         for i = 1:4
             Iq[q_ind[i],i] = 1
         end
         Iq = SMatrix{N,4}(Iq)
-        return new{N,M,T,N*4}(Q, R, q, r, c, w, q_ref, q_ind, Iq)
+        return new{N,M,T,N*4}(Q, R, q, r, c, w, q_ref, q_ind, Iq, terminal)
     end
 end
 
@@ -102,20 +103,20 @@ function change_dimension(cost::DiagonalQuatCost, n, m, ix, iu)
     q[ix] = cost.q
     r[iu] = cost.r
     qind = (1:n)[ix[cost.q_ind]]
-    DiagonalQuatCost(Diagonal(Q_diag), Diagonal(R_diag), q, r, cost.c, cost.w,
-        cost.q_ref, q_ind)
+    DiagonalQuatCost(Diagonal(SVector{n}(Qd)), Diagonal(SVector{m}(Rd)), 
+        SVector{n}(q), SVector{m}(r), cost.c, cost.w, cost.q_ref, qind)
 end
 
-function (+)(cost1::DiagonalQuatCost, cost2::QuadraticCost)
+function (+)(cost1::DiagonalQuatCost, cost2::TO.QuadraticCostFunction)
     @assert state_dim(cost1) == state_dim(cost2)
     @assert control_dim(cost1) == control_dim(cost2)
-    @assert norm(cost2.H) ≈ 0
+    is_diag(cost2) || @assert norm(cost2.H) ≈ 0
     DiagonalQuatCost(cost1.Q + cost2.Q, cost1.R + cost2.R,
         cost1.q + cost2.q, cost1.r + cost2.r, cost1.c + cost2.c,
         cost1.w, cost1.q_ref, cost1.q_ind)
 end
 
-(+)(cost1::QuadraticCost, cost2::DiagonalQuatCost) = cost2 + cost1
+(+)(cost1::TO.QuadraticCostFunction, cost2::DiagonalQuatCost) = cost2 + cost1
 
 function Base.copy(c::DiagonalQuatCost)
     DiagonalQuatCost(c.Q, c.R, c.q, c.r, c.c, c.w, c.q_ref, c.q_ind)

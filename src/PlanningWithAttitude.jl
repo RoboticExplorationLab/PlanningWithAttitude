@@ -24,7 +24,9 @@ export
     QuatErr,
     QuatVecEq,
     ErrorQuadratic,
-    LieLQR
+    QuatLQRCost,
+    LieLQR,
+    QuatRenorm
 
 
 
