@@ -3,19 +3,30 @@ module PlanningWithAttitude
 using StaticArrays
 using LinearAlgebra
 using Rotations
+using RobotZoo
+using Altro
+using TrajectoryOptimization
 import RobotDynamics
-import TrajectoryOptimization
 const RD = RobotDynamics
 const TO = TrajectoryOptimization
 
-include("rotatedmodel.jl")
+# include("rotatedmodel.jl")
 include("vecmodel.jl")
+include("airplane_problem.jl")
+include("quat_cons.jl")
+include("quat_costs.jl")
+include("quat_norm.jl")
 
 export
-    QuatSlackModel,
-    UnitQuatConstraint,
     VecModel,
-    QuatRenorm
+    YakProblems,
+    QuatGeoCon,
+    QuatErr,
+    QuatVecEq,
+    ErrorQuadratic,
+    LieLQR
+
+
 
 # include("logger.jl")
 # include("knotpoint.jl")

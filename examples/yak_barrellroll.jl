@@ -1,40 +1,147 @@
-
+import Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
+using RobotDynamics
+import RobotZoo.Quadrotor
 using TrajectoryOptimization
-const TO = TrajectoryOptimization
+using Altro
 using BenchmarkTools
-using TrajOptPlots
-using LinearAlgebra
+const TO = TrajectoryOptimization
+const RD = RobotDynamics
+
+using Random
 using StaticArrays
-using FileIO
-using DataFrames
-using MeshCat
-using GeometryTypes
-using CoordinateTransformations
+using LinearAlgebra
+using Rotations
+
 using PlanningWithAttitude
+using JLD2
+# using TrajOptPlots
+# using MeshCat
 
-# Start visualizer
-Rot = MRP{Float64}
-model = Dynamics.YakPlane(Rot)
-if !isdefined(Main,:vis)
-    vis = Visualizer(); open(vis);
+args = (
+    integration = RK3,
+    termcon = :quatvec,
+    projected_newton = false,
+    show_summary=true
+)
+
+##
+"""
+Compare Cost Functions
+"""
+
+function run_example(;vecstate=false, costfun=:Quadratic, args...)
+    prob,opts = YakProblems(vecstate=vecstate, costfun=costfun; args...) 
+    solver = ALTROSolver(prob, opts)
+    b = benchmark_solve!(solver)
+    push!(cost_comparison[:costfun], costfun)
+    push!(cost_comparison[:errstate], !vecstate)
+    push!(cost_comparison[:time], median(b).time)
+    push!(cost_comparison[:iters], iterations(solver))
+    push!(cost_comparison[:cost], solver.stats.cost)
+    push!(cost_comparison[:c_max], solver.stats.c_max)
+    push!(cost_comparison[:is_outer], solver.stats.iteration_outer)
 end
-delete!(vis)
-set_mesh!(vis, model)
 
-function gen_barrellroll(Rot; kwargs...)
-    prob = Problems.YakProblems(Rot, scenario=:barrellroll; kwargs...)
-    solver = iLQRSolver(prob)
-    solver.opts.verbose = false
-    solver
+cost_comparison = Dict(
+    :costfun => Symbol[], 
+    :errstate => Bool[], 
+    :time => Float64[], 
+    :iters => Int[],
+    :cost => Vector{Float64}[],
+    :c_max => Vector{Float64}[],
+    :is_outer => Vector{Int}[],
+)
+
+# Solve with Quadratic Cost and No Error State
+run_example(vecstate=true; args...)
+run_example(; args...)
+run_example(costfun=:QuatLQR; args...)
+run_example(costfun=:LieLQR; args...)
+run_example(costfun=:ErrorQuadratic; args...)
+
+@save "cost_comparison.jld2" cost_comparison
+
+## Plots
+@load "cost_comparison.jld2" cost_comparison
+using Plots
+pgfplotsx()
+
+# Append initial constraint violation for plot
+prob,opts = YakProblems(;args...) 
+solver = ALTROSolver(prob)
+c_max = max_violation(solver)
+for cvals in cost_comparison[:c_max]
+    cvals[isinf.(cvals)] .= c_max
 end
 
-solver = gen_barrellroll(UnitQuaternion{Float64,CayleyMap}, costfun=:QuatLQR)
-solver = gen_barrellroll(RPY{Float64}, costfun=:Quadratic)
-solver = gen_barrellroll(UnitQuaternion{Float64,IdentityMap}, use_rot=false, costfun=:Quadratic)
+is_outer = map(cost_comparison[:is_outer]) do iters
+    Bool.(insert!(diff(iters),1,0))
+end
+
+p = plot(cost_comparison[:c_max][1], label="original")
+plot!(cost_comparison[:c_max][3], label="modified",
+    xlabel="iteration", ylabel="constraint violation", yscale=:log10
+)
+savefig(p, "figs/c_max_convergence.tikz")
+
+## 
+"""
+Renorm Methods
+"""
+# Renormalize in discrete dynamics
+prob,opts = YakProblems(costfun=:QuatLQR, quatnorm=:renorm, N=51, integration=RK2; args...) 
+solver = ALTROSolver(prob, opts)
 solve!(solver)
-iterations(solver)
-visualize!(vis, solver)
-cost(solver)
+norm.(orientation.(RBState.(states(solver))))
+
+# Add norm slack
+prob,opts = YakProblems(costfun=:QuatLQR, quatnorm=:slack, N=101, 
+    integration=RK4; args..., termcon=:quaterr) 
+solver = ALTROSolver(prob, opts, projected_newton=false)
+solver.opts.verbose = 1
+solver.opts.penalty_scaling=100
+TO.get_constraints(solver).c_max
+max_violation(solver)
+controls(solver)[end]
+
+solve!(solver)
+norm.(orientation.(RBState.(states(solver))))
+TO.findmax_violation(solver)
+
+ilqr = Altro.get_ilqr(solver)
+TO.get_constraints(solver).convals[1]
+
+solver = ALTROSolver(prob, opts, show_summary=true)
+size(Altro.get_ilqr(solver).K[1]) == (4,12)  # make sure it's not using the error state
+solver.opts.verbose = 2
+solver.opts.bp_reg_initial = 1e-6
+solve!(solver)
+
+prob,opts = YakProblems(costfun=:ErrorQuad, integration=integration)
+solver = ALTROSolver(prob, opts, show_summary=true)
+solver = Altro.get_ilqr(solver)
+solver.opts.save_S = true
+Altro.initialize!(ilqr)
+TO.state_diff_jacobian!(solver.G, solver.model, solver.Z)
+TO.dynamics_expansion!(TO.integration(solver), solver.D, solver.model, solver.Z)
+TO.error_expansion!(solver.D, solver.model, solver.G)
+TO.cost_expansion!(solver.quad_obj, solver.obj, solver.Z, true, true)
+TO.error_expansion!(solver.Q, solver.quad_obj, solver.model, solver.Z, solver.G)
+ΔV = Altro.static_backwardpass!(solver)
+solver.quad_obj[end-1].Q
+diag(solver.Q[end-1].Q)
+solver.S[end-1].Q
+
+model = prob.model
+xf = prob.xf
+X = states(prob)
+[RD.state_diff(model, x, xf, Rotations.QuatVecMap())[4:6] for x in states(prob)]
+
+solve!(solver)
+
+x1, = rand(prob.model)
+x2, = rand(prob.model)
+
 
 data_br = run_all(gen_barrellroll, samples=10, evals=1)
 
