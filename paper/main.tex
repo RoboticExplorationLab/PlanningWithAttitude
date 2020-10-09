@@ -62,7 +62,7 @@
 Planning with Attitude
 }
 
-\author{Brian Jackson$^1$ and Zachary Manchester$^1$%
+\author{Brian Jackson$^1$, Kevin Tracy$^1$, and Zachary Manchester$^1$%
     \thanks{
         $^1$Robotics Institute, 
         Carnegie Mellon University, 
@@ -76,14 +76,9 @@ Planning with Attitude
 \begin{abstract}
 Planning and controlling trajectories for floating-base robotic systems that experience
 large attitude changes is challenging due to the nontrivial group structure of 3D
-rotations. This paper introduces an accessible and unified approach for tracking control
-and optimization-based planning on the space of rotations based on vector calculus and
-linear algebra. The methodology is used to derive an extension of the Linear-Quadratic
-Regulator (LQR) to systems with arbitrary attitudes, which we call Multiplicative LQR
-(MLQR). We compare MLQR to a state-of-the-art geometric tracking controller designed
-specifically for quadrotors and demonstrate superior tracking and robustness. An
-iterative variant of MLQR is compared to existing methods on several constrained
-trajectory optimization problems, again demonstrating improved runtime performance. 
+rotations. This paper introduces an accessible approach for 
+optimization-based planning on the space of rotations based on vector calculus and
+linear algebra. 
 \keywords{
     motion planning and control, quaternions, optimal control, linear quadratic regulator
 }
@@ -134,20 +129,26 @@ trajectory optimization problems, again demonstrating improved runtime performan
     should be familiar to most roboticists. 
     Similar to \cite{Mandic2011,Xu2016}, in Sec. \ref{sec:Quaternion_Calculus} we introduce 
     a quaternion differential calculus, but take a significantly simpler and more general 
-    approach that unifies both planning and control, enabling straight-forward adaptation of 
+    approach, enabling straight-forward adaptation of 
     existing algorithms to systems with quaternion states. 
-    To make this concrete, in Sec. \ref{sec:MLQR} we apply our approach to derive an 
-    extension to the linear-quadratic regulator (LQR) that we call multiplicative LQR (MLQR), 
-    which is the control dual to the multiplicative extended Kalman filter (MEKF) from the 
-    state estimation literature \cite{markley2014fundamentals}. 
-    In Sec. \ref{sec:experiments} we provide several simulation results demonstrating the 
-    application of our method to tracking control and constrained trajectory optimization.
+    To make this concrete, in Sec. \ref{sec:Wahbas} we apply this method to the canonical
+    Wahbas problem and demonstrate dramatically superior convergence to approaches that
+    fail to properly account for the group structure. 
+    In Sec. \ref{sec:trajopt} we extend these ideas to the problem of trajectory optimization,
+    and detail modifications to ALTRO, a state-of-the-art constrained trajectory optimization
+    solver, and demonstrate the performance gains on several constrained benchmark problems.
+    To our knowledge, there does not currently exist a solver that is capable of leveraging
+    the unique Markovian structure of the fixed-horizon trajectory optimization problem while
+    correctly accounting for the group structure of 3D rotations.
     In summary, our contributions include:
 
     \begin{itemize}
-        \item A unified approach to quaternion differential calculus entirely based on standard vector calculus and linear algebraic operations
-        \item Derivation of multiplicative LQR, an adaptation of LQR to the control of systems with quaternion states
-        \item A set of benchmark motion-planning and trajectory-tracking problems in which we compare our approach to existing methods commonly used in the robotics community to account for 3D rotations
+        \item A unified approach to quaternion differential calculus entirely based on
+        standard vector calculus and linear algebraic operations control of systems with
+        quaternion states
+        \item A fast and efficient solver for trajectory optimization problems with 
+        attitude dynamics and nonlinear constraints that correctly accounts for the group
+        structure of 3D rotations during the solve
     \end{itemize}
 
 
@@ -201,7 +202,7 @@ trajectory optimization problems, again demonstrating improved runtime performan
                 & -I_3 
             \end{bmatrix} q
         \end{equation}
-        The following identities, which are easily derived from 
+        The following identities, which are easily derived from
         \eqref{eq:Lmult}--\eqref{eq:T}, are extremely useful:
         \begin{align}
             &L(Tq) = L(q)^T = L(q)^{-1} \\
@@ -220,7 +221,7 @@ trajectory optimization problems, again demonstrating improved runtime performan
             r' &= H^T L(q) R(q)^T H r = A(q)r , \label{eq:quaternion_rotation}
         \end{align}
         where $A(q)$ is the rotation matrix in terms of the elements of the quaternion 
-        \cite{markley2014fundamentals}. 
+        \cite{kane1983spacecraftdynamics}. 
 
     \subsection{Rigid Body Dynamics} \label{sec:rigidbody_dynamics}
         In the current work we will restrict our focus to rigid bodies moving freely in 3D 
@@ -229,7 +230,7 @@ trajectory optimization problems, again demonstrating improved runtime performan
             x = \begin{bmatrix} r \\ R \\ v \\ \omega \end{bmatrix}, \quad 
             \dot{x} = \begin{bmatrix} 
                 v \\ 
-                \texttt{kinematics}(R,\omega) \\ 
+                \half \q \otimes \hat{\omega} = \half L(q) H \omega \\ 
                 \frac{1}{m} F_G(x,u) \\ 
                 J^{-1}(\tau_L(x,u) - \omega \times J \omega) 
             \end{bmatrix}
@@ -238,12 +239,7 @@ trajectory optimization problems, again demonstrating improved runtime performan
         $R \in SO(3)$ is the attitude, $v \in \R^3$ is the linear velocity, and 
         $\omega \in \R^3$ is the angular velocity. $m \in \R$ is the mass, 
         $J \in \R^{3\times3}$ is the inertia matrix, $F_G(x,u) \in \R^3$ are the forces in the 
-        global frame, $\tau_L(x,u)$ are the moments in the local (body) frame, and 
-        $\texttt{kinematics}$ are the kinematics for the chosen attitude representation. The 
-        kinematics for unit quaternions are
-        \begin{equation}
-            \dot{q} = \half \q \otimes \hat{\omega} = \half L(q) H \omega.
-        \end{equation}
+        global frame, and $\tau_L(x,u)$ are the moments in the local (body) frame.
 
 \section{Quaternion Differential Calculus} \label{sec:Quaternion_Calculus}
     We now present a simple but powerful method for taking derivatives of functions 
@@ -356,14 +352,42 @@ trajectory optimization problems, again demonstrating improved runtime performan
         \to H^T$ for any three-parameter attitude representation.
 
 
-\section{Multiplicative LQR} \label{sec:MLQR}
-    Leveraging the methods from the previous section, we derive multiplicative LQR
-    (MLQR), a variant of LQR that correctly accounts for the group structure of
-    rotations. For concreteness, we consider a system with rigid body dynamics, as
-    presented in Sec. \ref{sec:rigidbody_dynamics}, and design a controller to stabilize
-    the system about a dynamically feasible discretized reference trajectory
-    $\bar{x}_{0:N}, \bar{u}_{0:N}$ with $N$ time steps.
-    We begin by linearizing the dynamics about the reference trajectory using \eqref{eq:quat_jacobian}. Our linearized error dynamics become
+\section{Modifying Newton's Method} \label{sec:Wahbas}
+    Brief background and description of the problem.
+
+    \subsection{Methodology}
+    Brief description of using Newton's method to solve the batch version of Wahbas problem.
+
+    \subsection{Results}
+
+\section{Trajectory Optimization on $\R^n \times SO(3)$}
+    Here we outline the modifications to the ALTRO solver \cite{howell2019altro}, to
+    solve trajectory optimization problems for rigid bodies, which extends easily to
+    arbitrary systems in $R^n \times SO(3)$. ALTRO is an efficient solver for constrained
+    nonlinear optimization problems that uses iterative LQR (iLQR) with an augmented
+    Lagrangian framework.
+
+    We consider a trajectory optimization problem of the form:
+    \begin{mini}[2]
+        {x_{0:N},u_{0:N-1}}{\ell_f(x_N) + \sum_{k=0}^{N-1} \ell(x_k,u_k) }{}{}
+        \addConstraint{x_{k+1} = f(x_k,u_k)}
+        \addConstraint{g_k(x_k,u_k)}{\leq 0}
+        \addConstraint{h_k(x_k,u_k)}{=0}
+        \label{discrete_trajopt},
+    \end{mini}
+    where $x$ and $u$ are the state and control vectors as described in Sec. \ref{sec:rigidbody_dynamics},
+    $f$ are the dynamics as defined in \eqref{eq:rigid_body_dynamics}, $\ell$ is a general
+    nonlinear cost function,
+    $N$ is the number of time steps, and $g_k$, $h_k$ are general nonlinear inequality and 
+    equality constraints.
+
+    Like most gradient or Newton-based methods for optimization, ALTRO approximates the 
+    nonlinear functions $f, \ell, g,$ and $h$ with their first or second-order Taylor series
+    expansions. Leveraging the methods from Sec: \ref{sec:Quaternion_Calculus}, we adapt the
+    algorithm to optimize directly on the error state $\delta x \in \R^{12}$. 
+
+    We begin by linearizing the dynamics about the reference trajectory using
+    \eqref{eq:quat_jacobian}. Our linearized error dynamics become
     \begin{equation} \label{eq:linearized_dynamics}
         \delta x_{k+1} = A_k \delta x_k + B_k \delta u_k 
     \end{equation}
@@ -387,59 +411,55 @@ trajectory optimization problems, again demonstrating improved runtime performan
         \end{bmatrix}\!.
     \end{equation}
     
-    With our linearized system, we can apply the traditional LQR Riccati recursion,
+    By applying \eqref{eq:quat_gradient} and \eqref{eq:quat_hessian} to our nonlinear cost
+    functions $\ell$ and 
+    \eqref{eq:quat_jacobian} to the nonlinear constraint functions $g_k$ and $h_k$, we can calculate
+    the second-order expansion 
     \begin{multline}
-         P_k = W_k +  A_k^T P_{k+1} A_k \\
-         - A_k^T P_{k+1}^T B_k (R_k + B_k^T P_{k-1} B_k)^{-1} B_k^T P_{k+1} A_k ,
+        \delta \ell(x,u) \approx  \half \delta x^T \ell_xx \delta x
+            + \half \delta u^T \ell_{uu} \delta u + \delta_u^T \ell_{ux} \delta u \\
+            + \ell_x^T \delta x^T + \ell_u^T \delta u 
     \end{multline}
-    which minimizes the quadratic cost function
+    of the augmented Lagrangian cost function:
     \begin{equation}
-        \half \sum_{k=0}^N \delta x_k^T Q_k \delta x_k + \delta u_k^T R_k \delta u_k
+        \mathcal{L}_A = \mathcal{L}_N(x_N,\lambda_N,\mu_N) + 
+            \sum_{k=0}^{N-1} \mathcal{L}_k(x_k,u_k,\lambda_k,\mu_k)
     \end{equation}
-    of the state \emph{error}, where $Q_k \in \R^{12 \times 12}$ is the weight matrix on
-    the state \emph{error}, and $R_k \in \R^m$ is the weight matrix on the controls. From
-    this, we get our non-linear feedback policy
-    \begin{equation} \label{eq:mlqr_control}
-        u = K_k \delta x_k + \bar{u}_k.
+    where
+    \begin{equation}
+        \mathcal{L}_k(x,u,\lambda,\mu) = \ell(x,u) + 
+            (\lambda + \half I_\mu c(x,u))^T c(x,u),
     \end{equation}
-    where $\delta x_k$ is computed online using the non-linear error function
-    \eqref{eq:state_error} and the linear feedback gain $K_k$ is calculated using the
-    standard LQR formula:
-    \begin{equation} \label{eq:LQR_gain}
-         K_k := -(R_k + B_k^T P_{k+1} B_k)^{-1} B_k^T P_{k+1} A_k.
-    \end{equation}
-    
-    The multiplicative Linear Quadratic Regulator is summarized as follows:
-    \begin{enumerate}
-        \item Pick $Q_k \in \R^{12 \times 12}$ to weight the state \textit{error}, and $R_k \in \R^{m \times m}$
-        \item Linearize the dynamics using the state error Jacobian \eqref{eq:state_error}
-        \item Compute $K_k$ using the standard LQR Riccati recursion
-        \item Online, compute the control using \eqref{eq:state_error} and \eqref{eq:mlqr_control}.
-    \end{enumerate}
+    with $c(x,u)$ being the concatenation of the constraints $f,g$, and $h$ at a given time step,
+    and $I_\mu$ the penalty matrix.
 
-    \subsection{Constrained Iterative MLQR}
-        As demonstrated above, it is very straight-forward to adapt LQR to use
-        quaternions. We similarly use this technique to adapt nonlinear trajectory
-        optimization algorithms. Here we present the modifications to the ALTRO solver
-        \cite{howell2019altro}, which uses iterative LQR (iLQR) combined with an
-        augmented Lagrangian approach to handle constraints.
-        
-        For each iteration of iLQR within ALTRO, we can calculate a quadratic
-        approximation of the cost function using \eqref{eq:quat_gradient} and
-        \eqref{eq:quat_hessian}. Identical to \eqref{eq:linearized_dynamics}, we use
-        \eqref{eq:quat_jacobian} to linearize the dynamics and use MLQR to solve for the
-        feedback and feedforward gains.
-        
-        The only other modification to the algorithm is during the iLQR ``forward pass''
-        that simulates the system with the closed-loop MLQR controller, where we use
-        \eqref{eq:state_error} to calculate the nonlinear feedback policy during the
-        forward roll-outs.
-        For robustness, we may also add an additional criterion to the line search that
-        checks for singularities in the three-parameter error state which, for the Cayley
-        map, occur at \ang{180}, at which point the step size should be reduced.
-    
+    With this expansion, we calculate the expansion of the ``action-value function'' $Q(x,u)$
+    as normal:
+    \begin{align}
+        Q_{xx} &= \ell_{xx} + A_{k}^T P_{k+1} A_{k} \label{Qxx_exp}\\
+        Q_{uu} &= \ell_{uu} + B_{k}^T P_{k+1} B_{k} \label{Quu_exp}\\
+        Q_{ux} &= \ell_{ux} + B_{k}^T P_{k+1} A_{k} \label{Qux_exp}\\
+        Q_x &= \ell_x  + A_{k}^T p_{k+1} \label{Qx_exp}\\
+        Q_u &= \ell_u + B_{k}^T p_{k+1} \label{Qu_exp},
+    \end{align}
+    from which we can calculate the quadratic expansion of the cost-to-go 
+    $P_k \in \R^{12 \times 12}$, $p_k \in \R^12$, and optimal linearized feedback gains 
+    $K_k \in \R^{m \times 12}$ and $d_k \in \R^m$ by starting at the terminal state and
+    resursing backward in time along the trajectory during the ``backward pass'' of the iLQR
+    algorithm. During the ``forward pass'', the dynamics are simulated forward in time using
+    the feedback gains computed during the backward pass. At each time step, the control is 
+    calculated using the linear feedback controller: 
+    \begin{equation} \label{eq:mlqr_control}
+        u_k = K_k \delta x_k + \bar{u}_k.
+    \end{equation}
+    where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is 
+    computed using \eqref{eq:state_error}, with $x_k$ the current state estimate and $\bar{x}_k$
+    the state from the previous iteration. The rest of the algorithm is left unchanged. 
+    For more details on the ALTRO algorithm, the reader is encouraged to refer to the original
+    paper \cite{howell2019altro}.
+
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
-        In addition to the straight-forward modifications to the LQR algorithm itself, we
+        In addition to the straight-forward modifications to the ALTRO algorithm itself, we
         need to carefully consider the types of cost functions we minimize. We frequently
         minimize costs that penalize distance from a goal state, e.g. $\half (x-x_g)^T Q
         (x-x_g)$; however, na\"ive substraction of unit quaternions is ill-defined. We
@@ -516,73 +536,6 @@ trajectory optimization problems, again demonstrating improved runtime performan
         vectors). All examples re-normalize the quaternion in the dynamics function and
         use a third-order explicit Runge-Kutta integrator.
         
-        \begin{figure}
-            \centering
-            \includegraphics[height=4cm, width=8cm]{figures/timing_chart.tikz}
-            \caption{Timing results for the airplane barrell roll, quadrotor
-                flip, and quadrotor zig-zag examples using iLQR with
-                roll-pitch-yaw Euler angles (RPY), quaternions, and iMLQR. The
-                timing result for the Quadrotor flip with Euler angles is omitted
-                since it failed to converge.
-            }
-            \label{fig:timing_chart}
-        \end{figure}
-
-        \subsubsection{Quadrotor Zig-Zag}
-            \begin{figure}[t]
-                \centering
-                \includegraphics[height=5.2cm]{figures/zig_zag_tracking.png}
-                \caption{Zig-zag trajectory. The black quadrotors indicate
-                    the reference trajectory generated by iMLQR. The yellow
-                    quadrotors track the reference trajectory using time-varying
-                    MLQR, while the red uses the HFCA controller from
-                    \cite{watterson2020control}.
-                }
-                \label{fig:zig-zag}
-            \end{figure}    
-            \begin{figure}[t]
-                \centering
-                \includegraphics[height=5.2cm,trim={0 3cm 0 0},clip]{figures/quad_flip.png}
-                \caption{Snapshots of the quadrotor flip trajectory. The
-                    red-colored quadrotors represent the state near t=0 s and the
-                    green-colored quadrotors represent the state near t=5.0 s
-                }
-                \label{fig:quad_flip}
-            \end{figure}    
-            
-        We set up a fairly simple trajectory optimization problem to achieve a
-        ``zig-zag'' pattern, as shown in Fig. \ref{fig:zig-zag} using cost funtions of
-        the form
-        \begin{multline}
-                  \half \sum_{k \in \mathcal{N}} \ell(x_k, x_\text{nom}, Q_\text{nom}) 
-                + \half \sum_{k \in \mathcal{W}} \ell(x_k, \bar{x}_k, Q_w) \\
-                + \half \sum_{k=1} u_k^T R u_k
-        \end{multline}
-        with $\mathcal{W} = \{33,66,101\}$, $\mathcal{N} = \{1:101\} \setminus
-        \mathcal{W}$, and the waypoint positions were $(10,0,1)$,$(-10,0,1)$ and
-        $(0,10,0)$. We compared the two cost functions from Sec.
-        \ref{sec:cost_functions}, using a standard quadratic penalty on the
-        non-quaternion states.
-        \begin{align}
-            \ell_\text{err}(x, \bar{x}, Q) &= \delta x^T Q \delta x \\ 
-            \ell_\text{geo}(x, \bar{x}, Q) &= (x-\bar{x})^T \bar{Q} (x-\bar{x}) + w (1
-                \pm \bar{q}^T q)
-        \end{align}
-        where $\bar{Q} = \text{diag}(Q_r, \vec{0}_4, Q_v, Q_\omega)$, where
-        $Q_r,Q_v,Q_\omega$ are the weights of $Q$ for position, and linear and angular
-        velocity.
-        We used the following weighting matrices: 
-        $Q_\text{nom} = \text{diag}(10^{-5} I_6,10^{-3} I_6)$, 
-        $Q_w = \text{diag}(10^3 I_3,I_9)$, 
-        $Q_N = \text{diag}(10 I_3, 100 I_3, 10 I_6)$.
-        For the geodesic weights $w$, we used 0, 1, and 10 for the nominal, waypoint, and
-        terminal cost functions, respectively.
-        
-        The geodesic cost function performed significantly better than the error
-        quadratic, converging in 10 ms and 13 iterations, compared to 53 ms in 29
-        iterations. In addition to better convergence behavior, the geodesic cost is
-        about half as expensive to compute, which is unsurprising when comparing the
-        gradients and Hessians in Sec. \ref{sec:cost_functions}.
 
         \subsubsection{Quadrotor Flip}
 	    Similar to the previous example, we use a set of waypoints to encourage the
@@ -605,6 +558,16 @@ trajectory optimization problems, again demonstrating improved runtime performan
 	    iLQR with quaternions and quadratic costs was successful but had a slightly
         different trajectory. iLQR with Euler angles failed to solve the problem.
 
+            \begin{figure}[t]
+                \centering
+                \includegraphics[height=5.2cm,trim={0 3cm 0 0},clip]{figures/quad_flip.png}
+                \caption{Snapshots of the quadrotor flip trajectory. The
+                    red-colored quadrotors represent the state near t=0 s and the
+                    green-colored quadrotors represent the state near t=5.0 s
+                }
+                \label{fig:quad_flip}
+            \end{figure}    
+
         \subsection{Airplane Barrel Roll}
         An airplane model with aerodynamic coefficients fit from real wind-tunnel data is
         tasked to do a barrel roll by setting a high terminal cost for being upside-down,
@@ -615,7 +578,7 @@ trajectory optimization problems, again demonstrating improved runtime performan
         iLQR counterpart. For these highly aerobatic maneuvers, we achieve, as expected,
         better performance by correctly leveraging the structure of the rotation group
         during the optimization routine.
-
+        
         \begin{figure}[h]
             \centering
             \includegraphics[height=3.5cm]{figures/barrellroll.png}
@@ -623,77 +586,6 @@ trajectory optimization problems, again demonstrating improved runtime performan
             \label{fig:barrellroll}
         \end{figure}
     
-	    \begin{figure}[h]
-	        \centering
-	        \includegraphics[width=\columnwidth,height=4.5cm]{figures/tracking_err.tikz}
-	        \caption{Tracking error over time for the zig-zag trajectory using MLQR and the HFCA geometric controller. Band-limited white noise wrenches of variance $w$ are added to the continuous dynamics. }
-	        \label{fig:tracking_err}
-	    \end{figure}
-        \vspace{-20pt}
-
-	\subsection{Tracking Control}
-	    This section provides examples using MLQR for tracking and stabilizing control
-	    for a quadrotor. We compare our MLQR controller to HFCA, a state-of-the-art
-	    geometric tracking controller \cite{watterson2020control} based on the Hopf
-	    Fibration.
-	    
-	    \subsubsection{MLQR Stabilization}
-	    To test robustness and the domain of attraction of the MLQR controller, a
-	    quadrotor is linearized about hover at the origin and initialized from states
-	    uniformly sampled in $[-1,1]$ for position, $[-5,5]$ for linear and angular
-	    velocities, and uniformly over the entire space of rotations. The success rates
-	    for 2000 trials are given in Table \ref{tab:mlqr_success}, where success is
-	    defined as the terminal error (calculated using \eqref{eq:state_error}) being
-	    within a unit ball of radius 0.1 after 10.0 seconds. To further analyze the
-	    basins of attraction, we uniformly sampled over only roll (which goes singular at
-	    \ang{90} for our Euler angle representation), and yaw. The results are shown in
-	    Fig. \ref{fig:mlqr_basin}, where the plotted contours are the convex hull of the
-	    successfully stabilized initial conditions.
-	    
-	    MLQR slightly exceeds the robustness of the HFCA geometric controller, while also
-	    being more generally applicable, easier to tune, and easier to implement. It is
-	    also noteworthy that na\"ively using LQR with quaternions (incorrectly treating
-	    them as vectors) results in poorer performance than Euler angles, clearly
-	    demonstrating the value of the methodology presented in the current paper.
-	    
-	    \subsubsection{MLQR Tracking}
-	    Time-varying MLQR is used to track the zig-zag trajectory generated in the
-	    previous section. %The controller calculated the gains at $0.01 s$ intervals, and
-	    used zero-order-hold between intervals. To test tracking performance, zero-mean
-	    Gaussian noise was added as force and moments applied to the quadrotor.
-	    
-	    The trajectories and tracking error for MLQR and HFCA are shown in Figs.
-	    \ref{fig:zig-zag}, and \ref{fig:tracking_err}. While the MLQR controller
-	    dramatically out-performs HFCA, we found no significant difference in performance
-	    between MLQR and LQR using either roll-pitch-yaw Euler angles or a quaternion.
-	    Since the tracking controller only deals with relatively small state and attitude
-	    errors, this is unsurprising. Additionally, we found the MLQR controller ran
-        about 20x faster than the HFCA controller.
-
-	    \begin{figure*}[ht]
-	        \begin{minipage}{0.60\linewidth}
-                \centering
-                \includegraphics[height=6.6cm,width=\textwidth]{figures/mlqr_basin.tikz}
-                \caption{Basins of attraction of 4 stabilizing controllers for yaw and roll, calculated from 2000 sample points (shown in black). All points within each contour were successfully stabilized by the controller.}
-                \label{fig:mlqr_basin}
-            \end{minipage}
-	        \hspace{0.05\linewidth}
-            \begin{minipage}{0.34\linewidth}
-                \centering
-                \begin{tabular}{cc}
-                    \toprule
-                    \textbf{Method} & \textbf{Success} \\
-                    \midrule
-                    Quat & 61\% \\
-                    RPY  & 80\% \\
-                    HFCA & 97\% \\
-                    MLQR & 99\% \\
-                    \bottomrule
-                \end{tabular}
-                \caption{Success rate for Monte-Carlo analysis of quadrotor stabilization for 2000 initial conditions uniformly over position, orientation, and linear and angular velocities.}
-                \label{tab:mlqr_success}
-            \end{minipage}
-        \end{figure*}
 
 \section{Conclusions} \label{sec:conclusion}
     We have presented a general, unified method for planning and control on rigid-body
