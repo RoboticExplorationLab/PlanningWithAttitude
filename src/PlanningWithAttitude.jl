@@ -17,11 +17,13 @@ include("quat_costs.jl")
 include("quat_norm.jl")
 include("airplane_problem.jl")
 include("quadflip_problem.jl")
+include("flexible_spacecraft_dynamics.jl")
 
 export
     VecModel,
     YakProblems,
     QuadFlipProblem,
+    SatelliteKeepOutProblem,
     QuatGeoCon,
     QuatErr,
     QuatVecEq,

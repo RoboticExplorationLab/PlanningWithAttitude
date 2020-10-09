@@ -13,13 +13,13 @@ function RD.discrete_dynamics(::Type{Q},
     r,q,v,ω = RobotDynamics.parse_state(model.model, x2, true)
     RobotDynamics.build_state(model.model, r,q,v,ω)
 end
-RD.wrenches(model::QuatRenorm, z::RD.AbstractKnotPoint) = RD.wrenches(model.model, z)
-RD.forces(model::QuatRenorm, x, u) = RD.forces(model.model, x, u)
-RD.moments(model::QuatRenorm, x::StaticVector, u::StaticVector) = RD.moments(model.model, x, u)
-RD.mass(model::QuatRenorm) = RD.mass(model.model)
-RD.inertia(model::QuatRenorm) = RD.inertia(model.model)
-RD.inertia_inv(model::QuatRenorm) = RD.inertia_inv(model.model)
-RD.velocity_frame(model::QuatRenorm) = RD.velocity_frame(model.model)
+# RD.wrenches(model::QuatRenorm, z::RD.AbstractKnotPoint) = RD.wrenches(model.model, z)
+# RD.forces(model::QuatRenorm, x, u) = RD.forces(model.model, x, u)
+# RD.moments(model::QuatRenorm, x::StaticVector, u::StaticVector) = RD.moments(model.model, x, u)
+# RD.mass(model::QuatRenorm) = RD.mass(model.model)
+# RD.inertia(model::QuatRenorm) = RD.inertia(model.model)
+# RD.inertia_inv(model::QuatRenorm) = RD.inertia_inv(model.model)
+# RD.velocity_frame(model::QuatRenorm) = RD.velocity_frame(model.model)
 
 
 
