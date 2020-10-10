@@ -407,7 +407,10 @@ linear algebra.
 
 
     \subsection{Results}
-    \begin{figure}
+    
+    As visible in figure \ref{fig:wahba_convergence}, the original Newton's method makes progress early on in the iterations, but stops making progress as the normalization errors grow. The modified Newton's method, that applies the newton step as a rotation instead of an addition, is able to converge to floating point accuracy. 
+    
+    \begin{figure}[H]
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
         \caption{Convergence comparison for Wahba's problem. By performing Newton's method
@@ -416,6 +419,15 @@ linear algebra.
         error.}
         \label{fig:wahba_convergence}
     \end{figure}
+    % \begin{figure}[H]
+    %     \centering
+    %     \includegraphics[width=\columnwidth, height=5cm]{figures/kevins_plots/convergence_plot.tikz}
+    %     \caption{Convergence comparison for Wahba's problem. By performing Newton's method
+    %     on the error quaternion and applying the result to the full quaternion we achieve
+    %     quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
+    %     error.}
+    %     \label{fig:wahba_convergence}
+    % \end{figure}
 
 \section{Trajectory Optimization on $\R^n \times SO(3)$} \label{sec:trajopt}
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro}, to
