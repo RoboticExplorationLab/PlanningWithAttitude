@@ -659,25 +659,26 @@ in attitude.
     \end{table}
         
     \subsection{Satellite Attitude Keep-Out}
-    A spacecraft with flexible appendages must perform a 150 degree slew, while
-    making sure that a startracker does not look within 40 degrees of the sun. The
-    flexible body spacecraft dynamics are based on the truncated hybrid coordinate model,
-    with the three largest modes captured \cite{Tracy2020}. We can guarantee the
-    startracker body fixed vector ($^Br_{st}$) does not look within 40 degrees of the
-    inertial sun vector ($^Nr_{sun}$) by formulating the following constraint:
+    A spacecraft with flexible appendages must perform a 150 degree slew, while ensuring
+    that a star tracker line-of-sight does not cross within 40 degrees of the sun. The
+    attitudes that result in the star tracker pointing too close to the sun will be
+    referred to as a keep-out zone. The flexible body spacecraft dynamics are based on
+    the truncated hybrid coordinate model, with the three largest modes captured
+    \cite{Tracy2020}. We can guarantee the star tracker body fixed vector ($^Br_{st}$)
+    does not look within 40 degrees of the inertial sun vector ($^Nr_{sun}$) by
+    formulating the following constraint:
     \begin{equation}
-        \langle ^N A ^B {}^Br_{st} , ^Nr_{sun}\rangle \leq \cos(40 ^\circ).
+        \langle ^N q ^B {}^Br_{st} , ^Nr_{sun}\rangle \leq \cos(40 ^\circ).
     \end{equation}
-    From this constraint, an eigen-axis slew trajectory planner may violate this
-    constraint \cite{markley2014fundamentals}. ALTRO is able to reason about the
-    nonlinear flexible spacecraft dynamics, actuator constraints, and the startracker
-    line of sight constraint. The resulting attitude trajectory is shown Figure
-    \ref{{fig:satellite}}
+    Due to this constraint on the feasible attitudes, an eigen-axis slew trajectory
+    planner may end up violating this keep-out zone \cite{markley2014fundamentals}. ALTRO
+    can generate a feasible trajectory for this problem since it is able to reason about
+    the nonlinear flexible spacecraft dynamics, actuator constraints, and the star
+    tracker line of sight constraint.
         \begin{figure}
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
-            \caption{Visualization of the flexible spacecraft slew with a dedicated keep out zone. Attitude is parameterized with a Rodrigues parameter to visualize in 3D. The constraint surface represents attitudes where the startracker is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able reason about the keep out zone.}
-            \label{fig:satellite}
+            \caption{Visualization of the flexible spacecraft slew with a dedicated keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the star tracker line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
         \end{figure}
 
 
