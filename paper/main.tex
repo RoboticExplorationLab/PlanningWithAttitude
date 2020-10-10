@@ -445,7 +445,7 @@ in attitude.
     		\While{significant progress}
     		    \State $\bar{J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
     		    \State $ \phi = -(\bar{J}^T \bar{J})^{-1} \bar{J}^T r(q_k)$ 
-    		    \State $q_{k+1} = q_n \otimes \varphi{\phi}$ \Comment{apply step multiplicatively}
+    		    \State $q_{k+1} = q_k \otimes \varphi(\phi)$ \Comment{apply step multiplicatively}
     		    \State $k = k + 1$
     		\EndWhile
     	\end{algorithmic}
@@ -659,10 +659,15 @@ in attitude.
     \end{table}
         
     \subsection{Satellite Attitude Keep-Out}
+    A spacecraft with flexible appendages modes must perform a 150 degree slew, while making sure that a startracker does not look within 40 degrees of the sun. The flexible body spacecraft dynamics are based on the truncated hybrid coordinate model, with the three largest modes captured \cite{Tracy2020}. We can guarantee the startracker body fixed vector ($^Br_{st}$) does not look within 40 degrees of the inertial sun vector ($^Nr_{sun}$) by formulating the following constraint:
+    \begin{equation}
+        \langle ^N A ^B {}^Br_{st} , ^Nr_{sun}\rangle \leq \cos(40 ^\circ).
+    \end{equation}
+    From this constraint, an eigen-axis slew trajectory planner may violate this constraint \cite{markley2014fundamentals}. ALTRO is able to reason about the nonlinear flexible spacecraft dynamics, actuator constraints, and the startracker line of sight constraint.
         \begin{figure}
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
-            \caption{Attitude keep out}
+            \caption{Visualization of the flexible spacecraft slew with a dedicated keep out zone. Attitude is parameterized with a Rodrigues parameter to visualize in 3D. The constraint surface represents attitudes where the startracker is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able reason about the keep out zone.}
         \end{figure}
 
 
@@ -688,7 +693,7 @@ in attitude.
         \begin{figure}[h]
             \centering
             \includegraphics[height=4cm,width=\columnwidth]{figures/c_max_convergence.tikz}
-            \caption{Constraint convergence when solving the barrell roll problem. Compares 
+            \caption{Constraint convergence when solving the barrel roll problem. Compares 
             the convergence of the original version of ALTRO versus the new, modified version
             that optimizing on the error state.}
             \label{fig:c_max_convergence}
