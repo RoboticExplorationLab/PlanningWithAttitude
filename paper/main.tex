@@ -384,7 +384,7 @@ in attitude.
     rotation from the body to inertial frames ${}^N q^N$, expressed as a quaternion. We
     can define Wahba's loss function as the following: 
     \begin{align} \label{eq:wahba_loss}
-        L &= \sum_i w_i \norm{{}^N v_i - {}^N q^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
+        L &= \sum_i w_i \norm{{}^N v_i - {}^N A(q)^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
     \end{align} 
     where $r_i(q)$ is the residual vector.
 
@@ -435,7 +435,7 @@ in attitude.
     We obtain our step---this time in the actual tangent space---as before:
     $\phi = (\bar{J}^T \bar{J})^{-1} \bar{J}^T)$. To obtain our next iterate, we ``add'' the
     step using the correct notion of composition for the group: 
-    $q_{k+1} = q_k \otimes \varphi{\phi}$. This ``multiplicative'' Newton algorithm is 
+    $q_{k+1} = L(q_k) \varphi(\phi)$. This ``multiplicative'' Newton algorithm is 
     summarized in Algorithm \ref{alg:mgn}.
 
     \begin{algorithm} 
@@ -445,7 +445,7 @@ in attitude.
     		\While{significant progress}
     		    \State $\bar{J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
     		    \State $ \phi = -(\bar{J}^T \bar{J})^{-1} \bar{J}^T r(q_k)$ 
-    		    \State $q_{k+1} = q_k \otimes \varphi(\phi)$ \Comment{apply step multiplicatively}
+    		    \State $q_{k+1} = L(q_k) \varphi(\phi)$ \Comment{apply step multiplicatively}
     		    \State $k = k + 1$
     		\EndWhile
     	\end{algorithmic}
@@ -589,7 +589,7 @@ in attitude.
         For sake of clarity and space, we only consider the costs on the quaternion
         variables: costs on the other states and the control variables remain unaffected.
         
-        \subsubsection{Error Quadratic}
+        \subsubsection{Error Quadratic} \label{sec:error_quadratic}
             Rather than simple subtraction, we can use a quadratic function on the
             three-parameter error state \eqref{eq:state_error}:
             \begin{equation} \label{eq:error_quadratic}
@@ -659,15 +659,25 @@ in attitude.
     \end{table}
         
     \subsection{Satellite Attitude Keep-Out}
-    A spacecraft with flexible appendages modes must perform a 150 degree slew, while making sure that a startracker does not look within 40 degrees of the sun. The flexible body spacecraft dynamics are based on the truncated hybrid coordinate model, with the three largest modes captured \cite{Tracy2020}. We can guarantee the startracker body fixed vector ($^Br_{st}$) does not look within 40 degrees of the inertial sun vector ($^Nr_{sun}$) by formulating the following constraint:
+    A spacecraft with flexible appendages must perform a 150 degree slew, while
+    making sure that a startracker does not look within 40 degrees of the sun. The
+    flexible body spacecraft dynamics are based on the truncated hybrid coordinate model,
+    with the three largest modes captured \cite{Tracy2020}. We can guarantee the
+    startracker body fixed vector ($^Br_{st}$) does not look within 40 degrees of the
+    inertial sun vector ($^Nr_{sun}$) by formulating the following constraint:
     \begin{equation}
         \langle ^N A ^B {}^Br_{st} , ^Nr_{sun}\rangle \leq \cos(40 ^\circ).
     \end{equation}
-    From this constraint, an eigen-axis slew trajectory planner may violate this constraint \cite{markley2014fundamentals}. ALTRO is able to reason about the nonlinear flexible spacecraft dynamics, actuator constraints, and the startracker line of sight constraint.
+    From this constraint, an eigen-axis slew trajectory planner may violate this
+    constraint \cite{markley2014fundamentals}. ALTRO is able to reason about the
+    nonlinear flexible spacecraft dynamics, actuator constraints, and the startracker
+    line of sight constraint. The resulting attitude trajectory is shown Figure
+    \ref{{fig:satellite}}
         \begin{figure}
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
             \caption{Visualization of the flexible spacecraft slew with a dedicated keep out zone. Attitude is parameterized with a Rodrigues parameter to visualize in 3D. The constraint surface represents attitudes where the startracker is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able reason about the keep out zone.}
+            \label{fig:satellite}
         \end{figure}
 
 
@@ -682,6 +692,12 @@ in attitude.
         For these highly aerobatic maneuvers, we achieve, as expected, better
         performance by correctly leveraging the structure of the rotation group during
         the optimization routine.
+
+        We also compared using a quadratic cost on the 3-dimensional quaternion error
+        described in Section \ref{sec:error_quadratic} to the geodesic cost function in
+        Section \ref{sec:geodesic}. The geodesic cost was more efficient, both in term of 
+        iterations and computation time, taking only 41 iterations and 
+        
         
         \begin{figure}[h]
             \centering
