@@ -1,5 +1,6 @@
 using TrajectoryOptimization: LieLQRCost
 using ForwardDiff
+using RobotDynamics
 
 function YakProblems(;
         integration=RD.RK4,
@@ -15,8 +16,8 @@ function YakProblems(;
 
     opts = SolverOptions(
         cost_tolerance_intermediate = 1e-1,
-        penalty_scaling = 100.,
-        penalty_initial = 0.01;
+        penalty_scaling = 10.,
+        penalty_initial = 10.;
         kwargs...
     )
 
@@ -40,6 +41,13 @@ function YakProblems(;
         utrim  = @SVector  [41.6666, 106, 74.6519, 106]
         xf = RD.build_state(model, [3,0,1.5], pf, [5,0,0], [0,0,0])
 
+        # Xref trajectory
+        x̄0 = RBState(model, x0)
+        x̄f = RBState(model, xf)
+        Xref = map(1:N) do k
+            x̄0 + (x̄f - x̄0)*((k-1)/(N-1))
+        end
+
         # Objective
         Qf_diag = RD.fill_state(model, 100, 500, 100, 100.)
         Q_diag = RD.fill_state(model, 0.1, 0.1, 0.1, 0.1)
@@ -52,21 +60,31 @@ function YakProblems(;
             utrim = push(utrim, 0)
         end
         if costfun == :Quadratic
+            costfuns = map(Xref) do xref
+                LQRCost(Q, R, xf, utrim)
+            end
             costfun = LQRCost(Q, R, xf, utrim)
             costterm = LQRCost(Qf, R, xf, utrim)
+            costfuns[end] = costterm
         elseif costfun == :QuatLQR
-            # costfun = LieLQRCost(s, Q, R, xf, utrim; w=0.1)
-            # costterm = LieLQRCost(s, Qf, R, xf, utrim; w=200.0)
+            costfuns = map(Xref) do xref
+                QuatLQRCost(Q, R, xf, utrim, w=0.1)
+            end
             costfun = QuatLQRCost(Q, R, xf, utrim; w=0.1)
             costterm = QuatLQRCost(Qf, R, xf, utrim; w=200.0)
+            costfuns[end] = costterm
         elseif costfun == :LieLQR
             costfun = LieLQR(s, Q, R, xf, utrim)
             costterm = LieLQR(s, Qf, R, xf, utrim)
         elseif costfun == :ErrorQuadratic
+            costfuns = map(Xref) do xref
+                ErrorQuadratic(model, Q, R, xref, utrim)
+            end
             costfun = ErrorQuadratic(model, Q, R, xf, utrim)
             costterm = ErrorQuadratic(model, Qf, R, xf, utrim)
+            costfuns[end] = costterm
         end
-        obj = Objective(costfun, costterm, N)
+        obj = Objective(costfuns)
 
         # Constraints
         conSet = ConstraintList(n,m,N)

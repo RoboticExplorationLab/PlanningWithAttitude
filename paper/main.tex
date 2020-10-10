@@ -16,6 +16,7 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{gensymb}
 
 % Optimization and Algorithms
 \usepackage{optidef}
@@ -87,8 +88,8 @@ method to solve the canonical Wahba's problem, and modifying the ALTRO solver fo
 constrained nonlinear trajectory optimization to plan directly on the space of unit 
 quaternions, achieving superior convergence on problems involving significant changes 
 in attitude.
-\keywords{
-    motion planning and control, quaternions, optimal control, linear quadratic regulator
+\keywords{motion planning and control, quaternions, optimal control, 
+linear quadratic regulator
 }
 \end{abstract}
 
@@ -152,11 +153,10 @@ in attitude.
 
     \begin{itemize}
         \item A unified approach to quaternion differential calculus entirely based on
-        standard vector calculus and linear algebraic operations control of systems with
-        quaternion states
-        \item A fast and efficient solver for trajectory optimization problems with 
+        standard vector calculus and linear algebraic operations, and
+        \item a fast and efficient solver for trajectory optimization problems with 
         attitude dynamics and nonlinear constraints that correctly accounts for the group
-        structure of 3D rotations during the solve
+        structure of 3D rotations during the solve.
     \end{itemize}
 
 
@@ -381,14 +381,14 @@ in attitude.
 
     Given known vectors in some inertial frame, ${}^N v_i$, and measurements of these
     vectors in some body fixed frame, ${}^B v_i$, our goal is to determine the relative
-    rotation from the body to inertial frames ${}^N q^N$, expressed as a quaternion. We
+    rotation from the body to inertial frame ${}^N q^B$, expressed as a quaternion. We
     can define Wahba's loss function as the following: 
     \begin{align} \label{eq:wahba_loss}
         L &= \sum_i w_i \norm{{}^N v_i - {}^N A(q)^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
     \end{align} 
     where $r_i(q)$ is the residual vector.
 
-    We can solve for ${}^N q^N$ using a nonlinear least squares method minimizing
+    We can solve for ${}^N q^B$ using a nonlinear least squares method minimizing
     Wahba's loss function:
     \begin{mini*}
         {q}{ \norm{r(q)}_2^2 }{}{}
@@ -430,12 +430,12 @@ in attitude.
     we adapt the algorithm by simply ``correcting'' our Jacobian $J$ using 
     \eqref{eq:quat_jacobian}:
     \begin{equation} 
-        \bar{J} = \pdv{r(q \otimes \varphi{\phi})}{\phi} = \pdv{r(q)}{q} G(q).
+        \bar{J} = \pdv{r(\mathbf{q} \otimes \varphi(\phi))}{\phi} = \pdv{r(q)}{q} G(q).
     \end{equation}
     We obtain our step---this time in the actual tangent space---as before:
     $\phi = (\bar{J}^T \bar{J})^{-1} \bar{J}^T)$. To obtain our next iterate, we ``add'' the
     step using the correct notion of composition for the group: 
-    $q_{k+1} = L(q_k) \varphi(\phi)$. This ``multiplicative'' Newton algorithm is 
+    $\q_{k+1} = \q_k \otimes \varphi(\phi)$. This ``multiplicative'' Newton algorithm is 
     summarized in Algorithm \ref{alg:mgn}.
 
     \begin{algorithm} 
@@ -445,7 +445,7 @@ in attitude.
     		\While{significant progress}
     		    \State $\bar{J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
     		    \State $ \phi = -(\bar{J}^T \bar{J})^{-1} \bar{J}^T r(q_k)$ 
-    		    \State $q_{k+1} = L(q_k) \varphi(\phi)$ \Comment{apply step multiplicatively}
+    		    \State $\q_{k+1} = \q_k \otimes \varphi(\phi)$ \Comment{apply step multiplicatively}
     		    \State $k = k + 1$
     		\EndWhile
     	\end{algorithmic}
@@ -485,7 +485,7 @@ in attitude.
 \section{Trajectory Optimization on $\R^n \times SO(3)$} \label{sec:trajopt}
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro}, to
     solve trajectory optimization problems for rigid bodies, which extends easily to
-    arbitrary systems in $R^n \times SO(3)$. ALTRO is an efficient solver for constrained
+    arbitrary systems in $\R^n \times SO(3)$. ALTRO is an efficient solver for constrained
     nonlinear optimization problems that uses iterative LQR (iLQR) with an augmented
     Lagrangian framework.
 
@@ -565,7 +565,7 @@ in attitude.
         Q_u &= \ell_u + B_{k}^T p_{k+1} \label{Qu_exp},
     \end{align}
     from which we can calculate the quadratic expansion of the cost-to-go 
-    $P_k \in \R^{12 \times 12}$, $p_k \in \R^12$, and optimal linearized feedback gains 
+    $P_k \in \R^{12 \times 12}$, $p_k \in \R^{12}$, and optimal linearized feedback gains 
     $K_k \in \R^{m \times 12}$ and $d_k \in \R^m$ by starting at the terminal state and
     resursing backward in time along the trajectory during the ``backward pass'' of the iLQR
     algorithm. During the ``forward pass'', the dynamics are simulated forward in time using
@@ -574,11 +574,11 @@ in attitude.
     \begin{equation} \label{eq:mlqr_control}
         u_k = K_k \delta x_k + \bar{u}_k.
     \end{equation}
-    where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is 
-    computed using \eqref{eq:state_error}, with $x_k$ the current state estimate and $\bar{x}_k$
-    the state from the previous iteration. The rest of the algorithm is left unchanged. 
-    For more details on the ALTRO algorithm, the reader is encouraged to refer to the original
-    paper \cite{howell2019altro}.
+    where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is
+    computed using \eqref{eq:state_error}, with $x_k$ being the current state estimate
+    and $\bar{x}_k$ the state from the previous iteration. The rest of the algorithm is
+    left unchanged. For more details on the ALTRO algorithm, the reader is encouraged to
+    refer to the original paper \cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
         In addition to the straight-forward modifications to the ALTRO algorithm itself, we
@@ -642,11 +642,13 @@ in attitude.
     satellite with flexible modes that must slew to a new orientation while avoiding a 
     ``keep out'' orientation zone. All results were run on a desktop computer with an 
     AMD Ryzen 2950x processor with 40 GB of RAM. 
-    All problems are run using ALTRO, first without any of the modification presented 
+    All problems are run using ALTRO, first without any of the modifications presented 
     in the current paper, labeled ``original'', and then using the modifications listed
-    in Sec. \ref{sec:trajopt} and the geodesic cost funtion described in Sec. \ref{sec:geodesic}.
+    in Sec. \ref{sec:trajopt} and the geodesic cost funtion described in Sec. \ref{sec:geodesic},
+    labeled ``modified''.
     Timing results are summarized in Table \ref{tab:timing_results}.
-    All experiments were solved to a constraint satisfaction tolerance of $10^{-5}$.
+    All experiments were solved to a constraint satisfaction tolerance of $10^{-5}$ and 
+    discretized with a 4th order Runge-Kutta integrator.
     Code for all experiments is available on 
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
     {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
@@ -694,11 +696,15 @@ in attitude.
         performance by correctly leveraging the structure of the rotation group during
         the optimization routine.
 
-        We also compared using a quadratic cost on the 3-dimensional quaternion error
-        described in Section \ref{sec:error_quadratic} to the geodesic cost function in
-        Section \ref{sec:geodesic}. The geodesic cost was more efficient, both in term of 
-        iterations and computation time, taking only 41 iterations and 
-        
+        We also compared the ``error quadratic'' cost function described in Section
+        \ref{sec:error_quadratic} to the geodesic cost function in Section
+        \ref{sec:geodesic}. The geodesic cost was more efficient, both in term of
+        iterations and computation time, taking only 36 iterations and 1.8 ms/iteration
+        vs 76 iterations and 7.6 ms/iteration for the error quadratic. Not only is the
+        geodesic cost function much cheaper to compute, it also converges much faster
+        than the geodesic cost function. This could be due to the strong nonlinearities
+        introduced when computing the quaternion error, making it more difficult to
+        optimize.
         
         \begin{figure}[h]
             \centering
@@ -728,21 +734,25 @@ in attitude.
         quad around the x-axis a full \ang{360}.
 
 	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
-        ALTRO. The original version of ALTRO, even after significant tuning efforts,
-        would not converge to the desired solution. It instead got halfway and then ``unwound''
-        360 degrees and then continued rotating to the final orientation. This behavior
-        is common and expected when attempting optimization that does not properly account 
-        for the grou structure of rotations.
+	    ALTRO. The original version of ALTRO, even after significant tuning efforts,
+	    would not converge to the desired solution. It instead got halfway and then
+	    ``unwound'' 360 degrees and then continued rotating to the final orientation.
+	    This behavior is common and expected when attempting optimization that does not
+	    properly account for the group structure of rotations. It is also worth noting
+	    that this problem could not be solved using any three-parameter attitude
+	    representation, since it passes through the singularities at $90\degree,
+	    180\degree$, and $360\degree$ for Euler angles, Rodrigues parameters, and
+	    Modified Rodrigues Parameters, respectively.
 
-            \begin{figure}[t]
-                \centering
-                \includegraphics[height=5.2cm,trim={0 0cm 0 0},clip]{figures/quadflip.png}
-                \caption{Snapshots of the quadrotor flip trajectory. The
-                    red-colored quadrotors represent the state near t=0 s and the
-                    green-colored quadrotors represent the state near t=5.0 s
-                }
-                \label{fig:quad_flip}
-            \end{figure}    
+        \begin{figure}[t]
+            \centering
+            \includegraphics[width=\columnwidth]{figures/quadflip.png}
+            \caption{Snapshots of the quadrotor flip trajectory. The
+                gree-colored quadrotors represent the state near t=0 s and the
+                red-colored quadrotors represent the state near t=5.0 s
+            }
+            \label{fig:quad_flip}
+        \end{figure}    
     
 
 \section{Conclusions} \label{sec:conclusion}
@@ -756,12 +766,13 @@ in attitude.
     With the modifications presented, ALTRO can solve problems few other methods for 
     trajectory optimization can. Many state-of-the-art methods such as direct 
     collocation or sequential convex programming rely on commercial, proprietary, or 
-    general-purpose solvers whose internal numerics often abstracted away from the user. 
+    general-purpose solvers whose internal numerics often are abstracted away from the user. 
     By exploiting both the unique Markovian structure of the trajectory optimization problem
     and the group structure of rotations, ALTRO will likely be able to solve new classes of 
     problems with at or near real-time performance. Future work will focus on continued 
     refinement of the implementation and benchmarking against current state-of-the-art 
-    methods for trajectory optimization.
+    methods for trajectory optimization and other specialized solvers for optimization on
+    manifolds.
 
     Additionally, the methods presented here can easily be leveraged to adapt other classes
     of gradient or Newton-based algorithms to exploit the structure of 3D rotations. Future

@@ -93,10 +93,9 @@ add_result!(:satellite, true, solver)
 
 ## Save the table
 import Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
-using LaTeXTabulars, JLD2, DataFrames, PGFPlotsX
+using LaTeXTabulars, JLD2, DataFrames, PGFPlotsX, Printf
 results_path = joinpath(@__DIR__, "timing_results.jld2")
 @load results_path results
-names = Dict()
 
 df = DataFrame(results)
 df.time .= round.(df.time, digits=2)

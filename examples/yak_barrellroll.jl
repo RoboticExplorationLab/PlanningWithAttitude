@@ -19,7 +19,8 @@ using JLD2
 # using MeshCat
 
 args = (
-    integration = RK3,
+    constraint_tolerance=1e-5,
+    integration = RK4,
     termcon = :quatvec,
     projected_newton = false,
     show_summary=true
@@ -29,6 +30,11 @@ args = (
 """
 Compare Cost Functions
 """
+
+prob,opts = YakProblems(vecstate=false, costfun=:ErrorQuadratic; args...) 
+solver = ALTROSolver(prob, opts)
+solve!(solver)
+ilqr = Altro.get_ilqr(solver)
 
 function run_example(;vecstate=false, costfun=:Quadratic, args...)
     prob,opts = YakProblems(vecstate=vecstate, costfun=costfun; args...) 
@@ -57,7 +63,7 @@ cost_comparison = Dict(
 run_example(vecstate=true; args...)
 run_example(; args...)
 run_example(costfun=:QuatLQR; args...)
-run_example(costfun=:LieLQR; args...)
+# run_example(costfun=:LieLQR; args...)
 run_example(costfun=:ErrorQuadratic; args...)
 
 @save "cost_comparison.jld2" cost_comparison
