@@ -78,11 +78,15 @@ Planning with Attitude
 \maketitle
 
 \begin{abstract}
-Planning and controlling trajectories for floating-base robotic systems that experience
+Planning trajectories for floating-base robotic systems that experience
 large attitude changes is challenging due to the nontrivial group structure of 3D
-rotations. This paper introduces an accessible approach for 
+rotations. This paper introduces a powerful and accessible approach for 
 optimization-based planning on the space of rotations based on vector calculus and
-linear algebra. 
+linear algebra. We demonstrate the effectiveness of the approach by adapting Newton's
+method to solve the canonical Wahba's problem, and modifying the ALTRO solver for 
+constrained nonlinear trajectory optimization to plan directly on the space of unit 
+quaternions, achieving superior convergence on problems involving significant changes 
+in attitude.
 \keywords{
     motion planning and control, quaternions, optimal control, linear quadratic regulator
 }
@@ -357,48 +361,91 @@ linear algebra.
 
 
 \section{Modifying Newton's Method} \label{sec:Wahbas}
-    Newton's method uses derivative information about a function to iteratively approximate it's roots. For unconstrained systems, this method is highly effective, and can exhibit quadratic convergence.  For constrained systems, the updated parameter can be projected back onto the feasible set at each iteration, but without the same convergence guarantees. For the constraints on $SO(3)$, Newton's method struggles to converge past a certain threshold due to this projection. By leveraging the quaternion calculus introduced, Newton's method can be modified to implicitly account for these constraints. To demonstrate this, we will examine Wahba's Problem. In 1965, Grace Wahba proposed the criterion for a least squares estimate of a spacecraft's attitude from vector measurements \cite{markley2014fundamentals}. We will solve this problem using a standard nonlinear least squares method, as well as a method that exploits the true group structure of $SO(3)$ using the quaternion calculus presented here. 
+
+    Newton's method uses derivative information about a function to iteratively
+    approximate its roots. For unconstrained systems, this method is highly effective,
+    and can exhibit quadratic convergence. For constrained systems, the updated parameter
+    can be projected back onto the feasible set at each iteration, but without the same
+    convergence guarantees. For the constraints on $SO(3)$, Newton's method struggles to
+    converge past a certain threshold due to this projection. By leveraging the
+    quaternion calculus introduced, Newton's method can be modified to implicitly account
+    for these constraints. To demonstrate this, we will examine Wahba's Problem. In 1965,
+    Grace Wahba proposed the criterion for a least squares estimate of a spacecraft's
+    attitude from vector measurements \cite{markley2014fundamentals}. We will solve this
+    problem using a standard nonlinear least squares method, as well as a method that
+    exploits the true group structure of $SO(3)$ using the quaternion calculus presented
+    here.
     
 
     \subsection{Methodology}
-    
-    Given known vectors in some inertial frame, $N$, and measurements of these vectors in some body fixed frame, $B$, we can define Wahba's loss function as the following:
-    \begin{equation}
-        L = \sum_i w_i \| ^N v_i -  {}^N A^B(q)\,\,  ^Bv_i \|_2^2.
-    \end{equation}
-    This is a nonlinear function of the attitude, which will be stored as a quaternion. For convenience, the following residual vector function will be defined:
-    \begin{equation}
-        r_i = \sqrt{w_i} (^N v_i -  {}^N A{}^B(q)\,\,  ^Bv_i ),
-    \end{equation}
-    such that when these vectors are stacked in $r$, the loss function is a sum of squares. This problem now looks like a standard nonlinear least squares problem:
+
+    Given known vectors in some inertial frame, ${}^N v_i$, and measurements of these
+    vectors in some body fixed frame, ${}^B v_i$, our goal is to determine the relative
+    rotation from the body to inertial frames ${}^N q^N$, expressed as a quaternion. We
+    can define Wahba's loss function as the following: 
+    \begin{align} \label{eq:wahba_loss}
+        L &= \sum_i w_i \norm{{}^N v_i - {}^N q^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
+    \end{align} 
+    where $r_i(q)$ is the residual vector.
+
+    We can solve for ${}^N q^N$ using a nonlinear least squares method minimizing
+    Wahba's loss function:
     \begin{mini*}
-    {q}{ \|r(q)\|_2^2 }{}{}
-    \addConstraint { q\in SO(3).}
+        {q}{ \norm{r(q)}_2^2 }{}{}
+        \addConstraint { q\in SO(3).}
     \end{mini*}
-     There are two ways for keeping the solution in the $SO(3)$ group, a projected method and a multiplicative method. In a projected Gauss-Newton method, the Newton step is applied additively, and the resulting estimate is projected back onto $SO(3)$ with a normalization. This algorithm can be seen in algorithm \ref{alg:pgn}. 
+    
+    Following the typical approach for Newton's method, we minimize \eqref{eq:wahba_loss}
+    by setting the gradient to zero:
+    \begin{equation} \label{eq:newton_foc}
+        \begin{aligned}
+            \pdv{L}{q}^T &= \sum_i \pdv{r(q)}{q}^T r_i{q} := J^T r(q) = 0 \\
+              &= \sum_i (-2 H^T R(q)^T R({}^B \hat{v}_i)^T r(q).
+        \end{aligned}
+    \end{equation}
+    which can be obtained from the chain rule and \eqref{eq:quaternion_rotation}. 
+
+    Treating $q$ as a vector in $\R^4$, we obtain a solution to \eqref{eq:newton_foc}
+    using the Moore-Penrose pseudoinverse, $\delta q = (J^T J)^{-1} J^T$, and our
+    next candidate quaternion via simple addition, $q_{k+1} = q_k + \delta q$. Since
+    $q_{k+1}$ will no longer be unit norm, we project it back on the unit sphere via
+    the projection operator $\Pi(q) = q / \norm{q}$. This ``projected'' Newton approach
+    is summarized in Algorithm \ref{alg:pgn}.
+
     \begin{algorithm} 
     	\begin{algorithmic}[1]
     		\caption{Projected Gauss-Newton Method}\label{alg:pgn}
     		\State $k = 0$
     		\While{significant progress}
-    		    \State $J = \frac{\partial r(q_k)}{ \partial q}$ 
-    		    \State $ q_{step} = -(J^TJ)^{-1}J^T r(q_k)$ 
+    		    \State $J = \pdv{r(q_k)}{ \partial q}$ 
+    		    \State $ \delta q = -(J^TJ)^{-1}J^T r(q_k)$ 
     		  %  \State $q_{n+1} = \text{normalize}(q_n + q_{step})$ 
-    		  \State $q_{k+1} = \Pi_{SO(3)}(q_k + q_{step})$ 
+    		  \State $q_{k+1} = \Pi_{SO(3)}(q_k + \delta q)$ 
     		    \State $k = k + 1$
     		\EndWhile
     	\end{algorithmic}
     \end{algorithm}
-   This method can successfully lower the loss function initially, but the normalization errors will prevent convergence. To get around this, the quaternion calculus presented in this paper can be used to generate a Newton step that is a rotation instead of an addition. This method of applying the Newton step preserves the constraint satisfaction, and doesn't introduce any normalization errors.
+    
+    Alternatively, if we instead minimize with respect to a differential quaternion $\phi$,
+    we adapt the algorithm by simply ``correcting'' our Jacobian $J$ using 
+    \eqref{eq:quat_jacobian}:
+    \begin{equation} 
+        \bar{J} = \pdv{r(q \otimes \varphi{\phi})}{\phi} = \pdv{r(q)}{q} G(q).
+    \end{equation}
+    We obtain our step---this time in the actual tangent space---as before:
+    $\phi = (\bar{J}^T \bar{J})^{-1} \bar{J}^T)$. To obtain our next iterate, we ``add'' the
+    step using the correct notion of composition for the group: 
+    $q_{k+1} = q_k \otimes \varphi{\phi}$. This ``multiplicative'' Newton algorithm is 
+    summarized in Algorithm \ref{alg:mgn}.
+
     \begin{algorithm} 
     	\begin{algorithmic}[1]
     		\caption{Multiplicative Gauss-Newton Method}\label{alg:mgn}
     		\State $k = 0$
     		\While{significant progress}
-    		    \State $J = [\frac{\partial r(q_k)}{ \partial q}]G(q_k)$ \Comment{quaternion adjusted Jacobian}
-    		    \State $ \phi_{step} = -(J^TJ)^{-1}J^T r(q_k)$ 
-    		    \State $q_{step} = \varphi(\phi_{step})$ 
-    		    \State $q_{k+1} = q_n \otimes q_{step}$ \Comment{apply step multiplicatively}
+    		    \State $\bar{J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
+    		    \State $ \phi = -(\bar{J}^T \bar{J})^{-1} \bar{J}^T r(q_k)$ 
+    		    \State $q_{k+1} = q_n \otimes \varphi{\phi}$ \Comment{apply step multiplicatively}
     		    \State $k = k + 1$
     		\EndWhile
     	\end{algorithmic}
@@ -407,16 +454,22 @@ linear algebra.
 
 
     \subsection{Results}
-    
-    As visible in figure \ref{fig:wahba_convergence}, the original Newton's method makes progress early on in the iterations, but stops making progress as the normalization errors grow. The modified Newton's method, that applies the newton step as a rotation instead of an addition, is able to converge to floating point accuracy. 
-    
-    \begin{figure}[H]
+    As illustrated in Figure \ref{fig:wahba_convergence}, it is clear that by projecting 
+    back onto the unit quaternion at each iteration make initial progress, but fails to 
+    exhibit the quadratic convergence typical of a Newton method. By optimizing directly 
+    in the space of differential quaternions, we achieve the expected quadratic convergence.
+    It should also be clear from the previous section that the adaptations to the original
+    Newton method are simple and straightforward, highlighting both the effectiveness and
+    value of the proposed approach.
+    \begin{figure}
+
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
         \caption{Convergence comparison for Wahba's problem. By performing Newton's method
         on the error quaternion and applying the result to the full quaternion we achieve
         quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
-        error.}
+        error. The angle error is calculated relative to the true analytical solution obtained
+        via an SVD decomposition.}
         \label{fig:wahba_convergence}
     \end{figure}
     % \begin{figure}[H]
@@ -697,7 +750,7 @@ linear algebra.
     systems, such as humanoids or quadrupeds, especially in methods that exploit 
     ``maximal'' coordinates that include the 3D orientation of each body \cite{brudigam2020linear}. 
 
-\paragraph{Acknowledgements}
+\paragraph*{Acknowledgements}
 This material is based upon work supported by the National Science Foundation Graduate
 Research Fellowship Program under Grant No. DGE-1656518. Any opinions, findings, and
 conclusions or recommendations expressed in this material are those of the author(s) and
