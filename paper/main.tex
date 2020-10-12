@@ -397,18 +397,18 @@ in attitude.
     by setting the gradient to zero:
     \begin{equation} \label{eq:newton_foc}
         \begin{aligned}
-            \pdv{L}{q}^T &= \sum_i \pdv{r(q)}{q}^T r_i{q} := J^T r(q) = 0 \\
+            \pdv{L}{q}^T &= \sum_i \pdv{r(q)}{q}^T r_i{q} := \bar{J}^T r(q) = 0 \\
               &= \sum_i (-2 H^T R(q)^T R({}^B \hat{v}_i)^T r(q).
         \end{aligned}
     \end{equation}
     which can be obtained from the chain rule and \eqref{eq:quaternion_rotation}. 
 
-    Treating $q$ as a vector in $\R^4$, we obtain a solution to \eqref{eq:newton_foc}
-    using the Moore-Penrose pseudoinverse, $\delta q = (J^T J)^{-1} J^T$, and our
-    next candidate quaternion via simple addition, $q_{k+1} = q_k + \delta q$. Since
-    $q_{k+1}$ will no longer be unit norm, we project it back on the unit sphere via
-    the projection operator $\Pi(q) = q / \norm{q}$. This ``projected'' Newton approach
-    is summarized in Algorithm \ref{alg:pgn}.
+    % Treating $q$ as a vector in $\R^4$, we obtain a solution to \eqref{eq:newton_foc}
+    % using the Moore-Penrose pseudoinverse, $\delta q = (J^T J)^{-1} J^T$, and our
+    % next candidate quaternion via simple addition, $q_{k+1} = q_k + \delta q$. Since
+    % $q_{k+1}$ will no longer be unit norm, we project it back on the unit sphere via
+    % the projection operator $\Pi(q) = q / \norm{q}$. This ``projected'' Newton approach
+    % is summarized in Algorithm \ref{alg:pgn}.
 
     % \begin{algorithm} 
     % 	\begin{algorithmic}[1]
@@ -424,14 +424,14 @@ in attitude.
     % 	\end{algorithmic}
     % \end{algorithm}
     
-    Alternatively, if we instead minimize with respect to a differential quaternion $\phi$ \todo{Brian: is this supposed to be "differential rotation"?},
-    we adapt the algorithm by simply ``correcting'' our Jacobian $J$ using 
+    We can minimize this loss function with respect to a differential rotation $\phi$,
+    we do this by simply ``correcting'' our Jacobian $\bar{J}$ using 
     \eqref{eq:quat_jacobian}:
     \begin{equation} 
-        \bar{J} = \pdv{r(\mathbf{q} \otimes \varphi(\phi))}{\phi} = \pdv{r(q)}{q} G(q).
+        {J} = \pdv{r(\mathbf{q} \otimes \varphi(\phi))}{\phi} = \pdv{r(q)}{q} G(q).
     \end{equation}
-    We obtain our step---this time in the actual tangent space---as before:
-    $\phi = (\bar{J}^T \bar{J})^{-1} \bar{J}^T)$. To obtain our next iterate, we ``add'' the
+    We then use this to obtain our Newton step by using the Moore-Penrose psuedoinverse:
+    $\phi = ({J}^T {J})^{-1} {J}^T$. To obtain our next iterate, we ``add'' the
     step using the correct notion of composition for the group: 
     $\q_{k+1} = \q_k \otimes \varphi(\phi)$. This ``multiplicative'' Newton algorithm is 
     summarized in Algorithm \ref{alg:mgn}.
@@ -441,8 +441,8 @@ in attitude.
     		\caption{Multiplicative Gauss-Newton Method}\label{alg:mgn}
     		\State $k = 0$
     		\While{significant progress}
-    		    \State $\bar{J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
-    		    \State $ \phi = -(\bar{J}^T \bar{J})^{-1} \bar{J}^T r(q_k)$ 
+    		    \State ${J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
+    		    \State $ \phi = -({J}^T {J})^{-1} {J}^T r(q_k)$ 
     		    \State $\q_{k+1} = \q_k \otimes \varphi(\phi)$ \Comment{apply step multiplicatively}
     		    \State $k = k + 1$
     		\EndWhile
@@ -452,10 +452,10 @@ in attitude.
 
 
     \subsection{Results}
-    As illustrated in Figure \ref{fig:wahba_convergence}, it is clear that by projecting 
-    back onto the unit quaternion at each iteration make initial progress, but fails to 
+    We compared this modified Newton's method with a na\"ive Newton's method where the quaternion is simply re-normalized at every iteration. 
+    As illustrated in Figure \ref{fig:wahba_convergence}, it is clear that the naive original method make progress initially, but fails to
     exhibit the quadratic convergence typical of a Newton method. By optimizing directly 
-    in the space of unit quaternions, we achieve the expected quadratic convergence.
+    in the space of unit quaternions, the modified method is able to achieve the expected quadratic convergence.
     It should also be clear from the previous section that the adaptations to the original
     Newton method are simple and straightforward, highlighting both the effectiveness and
     value of the proposed approach.
@@ -658,28 +658,25 @@ where $\sign$ denotes the signum function.
     \end{table}
         
     \subsection{Satellite Attitude Keep-Out}
-    \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
+    % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
     A spacecraft with flexible appendages must perform a 150 degree slew while ensuring
-    that a star tracker line-of-sight does not cross within 40 degrees of the sun. The
-    attitudes that result in the star tracker pointing too close to the sun will be
-    referred to as a keep-out zone. The flexible body spacecraft dynamics are based on
-    the truncated hybrid coordinate model, with the three largest modes captured
-    \cite{Tracy2020}. We can guarantee the star tracker body fixed vector ($^Br_{st}$)
-    does not look within 40 degrees of the inertial sun vector ($^Nr_{sun}$) by
-    formulating the following constraint:
+    that a body-mounted camera does not cross within 40 degrees of the sun. The
+    attitudes that result in the camera pointing too close to the sun will be
+    referred to as a keep-out zone. The flexible body spacecraft dynamics are based on equation \eqref{eq:rigid_body_dynamics}, with the addition of four reaction wheels, and the three largest flexible modes \cite{Tracy2020}. In order to ensure no damage to the camera, we must formulate a constraint that guarantees that the camera line-of-sight body-fixed vector ($^Br_{cam}$)
+    does not look within 40 degrees of the world-fixed sun vector ($^Wr_{sun}$). This angle constraint can be represented as a dot product between the two vectors expressed in the world frame:
     % \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
     \begin{equation}
-         [{}^W r_{sun}]^T[{}^W A(q) {}^B\, {}^Br_{st} ] \leq \cos(40 ^\circ).
+         [{}^W r_{sun}]^T[{}^W A(q) {}^B\, {}^Br_{cam} ] \leq \cos(40 ^\circ).
     \end{equation}
-    %Due to this constraint on the feasible attitudes, an eigen-axis slew trajectory planner may end up violating this keep-out zone \cite{markley2014fundamentals}. ALTRO can generate a feasible trajectory for this problem since it is able to reason about the nonlinear flexible spacecraft dynamics, actuator constraints, and the star tracker line of sight constraint.
-        \begin{figure}
+    The attitudes that satisfy this constraint comprise a non-convex set, with the constraint itself being nonlinear in the attitude quaternion. 
+        \begin{figure}[H]
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
-            \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the star tracker line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
+            \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the camera line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
             \label{fig:keepout}
         \end{figure}
 % \todo{Talk a little about the results in the plot here.}
-From Figure \ref{fig:keepout} we can see that without the pointing constraint present, the trajectory will pass through the keep-out zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO is able to converge on a trajectory that . 
+ALTRO is able to reason about this nonlinear constraint, and account for the group structure present in the quaternion. From Figure \ref{fig:keepout} we can see that without the camera constraint present, the trajectory will pass through the keep-out zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO is able to converge on a trajectory that performs the slew in an efficient manner, while keeping the camera sufficiently far from the sun. 
 
     \subsection{Airplane Barrel Roll}
 \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
