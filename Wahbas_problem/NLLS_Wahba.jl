@@ -1,8 +1,9 @@
 # activate the virtual environment
-cd(dirname(@__FILE__))
-Pkg.activate(".")
+# cd(dirname(@__FILE__))
+import Pkg; Pkg.activate(@__DIR__)
 
-using ForwardDiff, LinearAlgebra, MATLAB, Statistics
+using ForwardDiff, LinearAlgebra, Statistics, JLD2
+# using MATLAB
 
 function randq()
     """Random quaternion"""
@@ -348,15 +349,23 @@ function projected_newton_wahba()
 
 end
 
-# run trials
-trials = 250
-mn = zeros(trials,21)
-pn = zeros(trials,21)
+## run trials
+trials = 25
+max_iters = 21
+mn = zeros(trials,max_iters)
+pn = zeros(trials,max_iters)
 
 for i = 1:trials
-q, qsvd, mn[i,:] = newton_wahba()
-q, qsvd, pn[i,:] = projected_newton_wahba()
+    q, qsvd, mn[i,:] = newton_wahba()
+    q, qsvd, pn[i,:] = projected_newton_wahba()
 end
+@save joinpath(@__DIR__, "wahba_results.jld2") mn pn
+
+
+
+## Generate plot
+using PGFPlotsX, Statistics
+@load joinpath(@__DIR__, "wahba_results.jld2") mn pn
 
 # average the results
 p_average = zeros(5)
@@ -366,6 +375,63 @@ for i = 1:5
     p_average[i] = (mean(pn[:,i]))
     m_average[i] = (mean(mn[:,i]))
 end
+
+p_plots = map(eachrow(pn)) do p
+    @pgf PlotInc(
+        {
+            color="cyan",
+            no_marks,
+            "line width=0.1pt",
+            "forget plot",
+            opacity=0.3
+            # "dashed"
+        },
+        Coordinates(1:5, p[1:5])
+    )
+end
+m_plots = map(eachrow(mn)) do p
+    @pgf PlotInc(
+        {
+            color="orange",
+            no_marks,
+            "line width=0.1pt",
+            # "dashed",
+            "forget plot",
+            opacity=0.3
+        },
+        Coordinates(1:5, p[1:5])
+    )
+end
+p = @pgf Axis(
+    {
+        xlabel="iterations",
+        ylabel="angle error (degrees)",
+        "ymode=log",
+        xmajorgrids,
+        ymajorgrids,
+        "legend style={at={(0.1,0.1)},anchor=south west}"
+    },
+    m_plots...,
+    p_plots...,
+    PlotInc(
+        {
+            color="cyan",
+            no_marks,
+            "line width=3pt"
+        },
+        Coordinates(1:5, p_average)
+    ),
+    PlotInc(
+        {
+            color="orange",
+            no_marks,
+            "line width=3pt"
+        },
+        Coordinates(1:5, m_average)
+    ),
+    Legend("naive", "modified")
+)
+pgfsave("paper/figures/wahba_convergence.tikz", p, include_preamble=false)
 
 mat"
 c = 0.7

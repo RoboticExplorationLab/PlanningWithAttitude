@@ -1,5 +1,5 @@
 \begin{tikzpicture}
-\begin{axis}[xlabel={iterations}, ylabel={Angle Error (degrees)}, ymode=log, xmajorgrids, ymajorgrids, legend style={at={(0.1,0.1)},anchor=south west}]
+\begin{axis}[xlabel={iterations}, ylabel={angle error (degrees)}, ymode=log, xmajorgrids, ymajorgrids, legend style={at={(0.1,0.1)},anchor=south west}]
     \addplot+[color={orange}, no marks, line width=0.1pt, forget plot, opacity={0.3}]
         coordinates {
             (1,9.999999999999993)
@@ -468,6 +468,6 @@
             (5,6.199994320168363e-6)
         }
         ;
-    \legend{{original},{modified}}
+    \legend{{naive},{modified}}
 \end{axis}
 \end{tikzpicture}
