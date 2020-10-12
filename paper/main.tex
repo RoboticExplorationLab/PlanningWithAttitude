@@ -649,17 +649,16 @@ in attitude.
 \section{Experiments} \label{sec:experiments}
     In this section we present several trajectory optimization problems for systems that
     undergo large changes in attitude: an airplane barrel roll, a quadrotor flip, and a
-    satellite with flexible solar panels that must slew to a new orientation while avoiding a 
-    keep-out zone. All results were run on a desktop computer with an 
-    AMD Ryzen 2950x processor with 40 GB of RAM. 
-    All problems are run using ALTRO, first without any of the modifications presented 
-    in the current paper, analagous to the naive Newton's method in section \ref{sec:Wahbas} and labeled ``naive'', and then using the modifications listed
-    in Sec. \ref{sec:trajopt} and the geodesic cost function described in Sec. \ref{sec:geodesic},
-    labeled ``modified''.
-    Timing results are summarized in Table \ref{tab:timing_results}.
-    All experiments were solved to a constraint satisfaction tolerance of $10^{-5}$ and 
-    discretized with a 4th order Runge-Kutta integrator.
-    Code for all experiments is available on 
+    satellite with flexible solar panels that must slew to a new orientation while
+    avoiding a keep-out zone. All results were run on a desktop computer with an AMD
+    Ryzen 2950x processor with 40 GB of RAM. All problems are run using ALTRO, first
+    without any of the modifications presented in the current paper, analagous to the
+    naive Newton's method in section \ref{sec:Wahbas} and labeled ``naive'', and then
+    using the modifications listed in Sec. \ref{sec:trajopt} and the geodesic cost
+    function described in Sec. \ref{sec:cost_functions}, labeled ``modified''. Timing
+    results are summarized in Table \ref{tab:timing_results}. All experiments were solved
+    to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 4th order
+    Runge-Kutta integrator. Code for all experiments is available on
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
     {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
 
@@ -671,26 +670,45 @@ in attitude.
     \end{table}
         
     \subsection{Satellite Attitude Keep-Out}
-    % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
-    A spacecraft with flexible appendages must perform a 150 degree slew while ensuring
-    that a body-mounted camera does not cross within 40 degrees of the sun. The
-    attitudes that result in the camera pointing too close to the sun will be
-    referred to as a keep-out zone. The flexible body spacecraft dynamics are based on equation \eqref{eq:rigid_body_dynamics}, with the addition of four reaction wheels, and the three largest flexible modes \cite{Tracy2020}. In order to ensure no damage to the camera, we must formulate a constraint that guarantees that the camera line-of-sight body-fixed vector ($^Br_{cam}$)
-    does not look within 40 degrees of the world-fixed sun vector ($^Wr_{sun}$). This angle constraint can be represented as a dot product between the two vectors expressed in the world frame:
-    % \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
-    \begin{equation}
-         \left(\inframe{W}{r_{sun}}\right)^T 
-         \left(\toframe{W}{B}{A(q)} \, \inframe{B}{r_{cam}} \right) \leq \cos(40 ^\circ).
-    \end{equation}
-    The attitudes that satisfy this constraint comprise a non-convex set, with the constraint itself being nonlinear in the attitude quaternion. 
+        % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
+        A spacecraft with flexible appendages must perform a 150 degree slew while
+        ensuring that a body-mounted camera does not cross within 40 degrees of the sun.
+        The attitudes that result in the camera pointing too close to the sun will be
+        referred to as a keep-out zone. The flexible body spacecraft dynamics are based
+        on equation \eqref{eq:rigid_body_dynamics}, with the addition of four reaction
+        wheels, and the three largest flexible modes \cite{Tracy2020}. In order to ensure
+        no damage to the camera, we must formulate a constraint that guarantees that the
+        camera line-of-sight body-fixed vector ($^Br_{cam}$) does not look within 40
+        degrees of the world-fixed sun vector ($^Wr_{sun}$). This angle constraint can be
+        represented as a dot product between the two vectors expressed in the world
+        frame:
+        % \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
+        \begin{equation}
+            \left(\inframe{W}{r_{sun}}\right)^T 
+            \left(\toframe{W}{B}{A(q)} \, \inframe{B}{r_{cam}} \right) \leq \cos(40 ^\circ).
+        \end{equation}
+        The attitudes that satisfy this constraint comprise a non-convex set, with the
+        constraint itself being nonlinear in the attitude quaternion.
         \begin{figure}[H]
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
             \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the camera line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
             \label{fig:keepout}
         \end{figure}
-% \todo{Talk a little about the results in the plot here.}
-ALTRO is able to reason about this nonlinear constraint, and account for the group structure present in the quaternion. From Figure \ref{fig:keepout} we can see that without the camera constraint present, the trajectory will pass through the keep-out zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO is able to converge on a trajectory that performs the slew in an efficient manner, while keeping the camera sufficiently far from the sun. 
+        % \todo{Talk a little about the results in the plot here.}
+        ALTRO is able to reason about this nonlinear constraint, and account for the group
+        structure present in the quaternion. From Figure \ref{fig:keepout} we can see that
+        without the camera constraint present, the trajectory will pass through the keep-out
+        zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO
+        is able to converge on a trajectory that performs the slew in an efficient manner, while
+        keeping the camera sufficiently far from the sun. 
+
+        The modifications didn't have a significant impact on runtime performance for this
+        example. In our experience, the computational benefits of the proposed methodology are
+        problem-dependent, especially for highly nonlinear systems. The following examples result
+        in more dynamic and aerobatic behaviors, where the computational benefit of the proposed
+        methodology is significant, including an example where the naive method failed to find a
+        good solution.
 
     \subsection{Airplane Barrel Roll}
 % \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
@@ -717,14 +735,14 @@ ALTRO is able to reason about this nonlinear constraint, and account for the gro
         % introduced when computing the quaternion error, making it more difficult to
         % optimize.
         
-        \begin{figure}[h]
+        \begin{figure}[ht]
             \centering
             \includegraphics[width=\columnwidth]{figures/barrellroll.png}
             \caption{Barrel roll trajectory computed by iterative MLQR using a terminal cost to encourage an upside-down attitude.}
             \label{fig:barrellroll}
         \end{figure}
 
-        \begin{figure}[h]
+        \begin{figure}[ht]
             \centering
             \includegraphics[height=4cm,width=\columnwidth]{figures/c_max_convergence.tikz}
             \caption{Constraint convergence when solving the barrel roll problem. Compares 
