@@ -315,7 +315,7 @@ in attitude.
             \nabla h(q) = \pdv{h}{q} L(q) H := \pdv{h}{q} G(q) 
                         = \pdv{h}{q} \begin{bmatrix} 
                             -q_v^T \\ 
-                            sI_3 + \skewmat{q_v}
+                            q_s I_3 + \skewmat{q_v}
                         \end{bmatrix}
         \end{equation}
         where $G(q) \in \R^{4 \times 3}$ is the \textit{attitude Jacobian}, which
@@ -383,12 +383,12 @@ in attitude.
 
     \subsection{Methodology}
 % \todo{Let's keep our notation and language consistent for body vs. inertial frames. I propose ``body'' (B) and ``inertial'' or ``world'' (W), which is the standard in robotics.}
-    Given known vectors in some world frame, $\inframe{W}{v_i}$, and measurements of these
+    Given known vectors in some world frame, $\inframe{W}{w_i}$, and measurements of these
     vectors in some body fixed frame, $\inframe{B}{v_i}$, our goal is to determine the relative
     rotation from the body to world frame $\toframe{W}{B}{A(q)}$, expressed as a quaternion. We
     can define Wahba's loss function as the following: 
     \begin{equation} \label{eq:wahba_loss}
-        L = \sum_i \norm{\inframe{W}{v_i} - \toframe{W}{B}{A(q)} \,\, \inframe{B}{v_i} }_2^2 
+        L = \sum_i \norm{\inframe{W}{w_i} - \toframe{W}{B}{A(q)} \,\, \inframe{B}{v_i} }_2^2 
            = \norm{r_i(q)}_2^2 
     \end{equation} 
     % \todo{Let's leave the $w_i$ off for clarity since you're not using it later.}
@@ -791,12 +791,13 @@ in attitude.
     \ref{fig:wahba_convergence}), while also offering improvements for nonlinear constrained
     trajectory optimization for floating-base systems (see Table \ref{tab:timing_results}).
     
-    With the modifications presented, ALTRO can solve problems few other methods for 
-    trajectory optimization can. Many state-of-the-art methods, such as direct 
-    collocation or sequential convex programming, rely on commercial, proprietary, or 
-    general-purpose solvers whose internal numerics often are abstracted away from the user. 
-    By exploiting the unique structure of both the trajectory optimization problem
-    and the rotation group, ALTRO will likely be able to solve more challenging problems with performance. 
+    With the modifications presented, ALTRO can solve problems few other methods for
+    trajectory optimization can. Many state-of-the-art methods, such as direct
+    collocation or sequential convex programming, rely on commercial, proprietary, or
+    general-purpose solvers whose internal numerics often are abstracted away from the
+    user. By exploiting the unique structure of both the trajectory optimization problem
+    and the rotation group, ALTRO will likely be able to solve more challenging problems
+    with performance.
 
     The methods presented here can easily be leveraged to adapt other classes
     of gradient or Newton-based algorithms to exploit the structure of 3D rotations. Future
