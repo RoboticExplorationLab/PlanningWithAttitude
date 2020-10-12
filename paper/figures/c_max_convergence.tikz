@@ -103,6 +103,6 @@
             (41,6.737144118140748e-7)
         }
         ;
-    \legend{{original},{modified}}
+    \legend{{naive},{modified}}
 \end{axis}
 \end{tikzpicture}

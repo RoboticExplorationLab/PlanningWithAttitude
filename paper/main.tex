@@ -17,6 +17,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{gensymb}
+\usepackage{tensor}
 
 % Optimization and Algorithms
 \usepackage{optidef}
@@ -61,6 +62,8 @@
 \newcommand{\traj}[2][N]{#2_{0:{#1}}}
 \newcommand{\pass}{{\color{green} \checkmark}}
 \newcommand{\fail}{{\color{red} \ding{55}}}
+\newcommand{\inframe}[2]{{}^{#1}\!#2}
+\newcommand{\toframe}[3]{\inframe{#1}{#3}^{#2}}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO: #1}}
 
@@ -158,17 +161,19 @@ in attitude.
 \section{Background}
 
     We begin by defining some useful conventions and notation. 
-    Attitude is defined as the rotation from the robot's body frame to a global inertial 
-        frame. 
+    Attitude is defined as the rotation from the robot's body frame to the world frame.
     We also define gradients to be row vectors, that is, for 
         $f(x) : \R^n \to \R$, $\pdv{f}{x} \in \R^{1\times n}$.
 
     \subsection{Unit Quaternions} \label{sec:quaternions}
-        We leverage the fact that quaternions are linear operators and that the space of 
-        quaternions $\mathbb{H}$ is isomorphic to $\R^4$ to explicitly 
-        represent---following the Hamilton convention---a quaternion $\q \in \mathbb{H}$ as 
-        a standard vector $q \in \R^4 := [q_s \;\; q_v^T]^T$ where $q_s \in \R$ and 
-        $q_v \in \R^3$ are referred to as the scalar and vector parts of the quaternion, respectively.
+        We leverage the fact that quaternions are linear operators and that the space of
+        quaternions $\mathbb{H}$ is isomorphic to $\R^4$ to explicitly
+        represent---following the Hamilton convention---a quaternion $\q \in \mathbb{H}$
+        as a standard vector $q \in \R^4 := [q_s \;\; q_v^T]^T$ where $q_s \in \R$ and
+        $q_v \in \R^3$ are referred to as the scalar and vector parts of the quaternion,
+        respectively. The space of unit quaternions, $\Q = \{q : \norm{q}_2 = 1\}$, is a 
+        a double-cover of the rotation group $SO(3)$, since $q$ and $-q$ represent the same 
+        rotation \cite{markley2014fundamentals}.
         
         Quaternion multiplication is defined as
         \begin{equation} \label{eq:quat_mult}
@@ -196,8 +201,8 @@ in attitude.
             \end{bmatrix}.
         \end{equation}
         
-        The inverse of a unit quaternion $q^{-1}$, giving the opposite rotation, is equal 
-        to its conjugate $q^*$, which is simply the same quaternion with a negated vector 
+        The inverse of a unit quaternion $\q^{-1}$, giving the opposite rotation, is equal 
+        to its conjugate $\q^*$, which is simply the same quaternion with a negated vector 
         part:
         \begin{equation} \label{eq:T}
             \q^* = T q := \begin{bmatrix} 
@@ -234,15 +239,16 @@ in attitude.
             \dot{x} = \begin{bmatrix} 
                 v \\ 
                 \half \q \otimes \hat{\omega} = \half L(q) H \omega \\ 
-                \frac{1}{m} F_G(x,u) \\ 
-                J^{-1}(\tau_L(x,u) - \omega \times J \omega) 
+                \frac{1}{m} \inframe{W}{F(x,u)} \\ 
+                J^{-1}(\inframe{B}{\tau(x,u)} - \omega \times J \omega) 
             \end{bmatrix}
         \end{equation}
-        where $x$ and $u$ are the state and control vectors, $r \in \R^3$ is the position, 
-        $R \in SO(3)$ is the attitude \todo{why didn't we just make this $q$?}, $v \in \R^3$ is the linear velocity, and 
-        $\omega \in \R^3$ is the angular velocity. $m \in \R$ is the mass, 
-        $J \in \R^{3\times3}$ is the inertia matrix, $F_G(x,u) \in \R^3$ are the forces in the 
-        global frame, and $\tau_L(x,u)$ are the moments in the local (body) frame \todo{Can we stick with just the term ``body'' throughout the paper (and maybe change $L$ to $B$ here)?}.
+        where $x$ and $u$ are the state and control vectors, $r \in \R^3$ is the
+        position, $\q \in \Q$ is the attitude, $v \in \R^3$ is the linear velocity, and
+        $\omega \in \R^3$ is the angular velocity. $m \in \R$ is the mass, $J \in
+        \R^{3\times3}$ is the inertia matrix, $\inframe{W}{F(x,u)} \in \R^3$ are the
+        forces in the world frame, and $\inframe{B}{\tau(x,u)}$ are the moments in the
+        body frame.
 
 \section{Quaternion Differential Calculus} \label{sec:Quaternion_Calculus}
     We now present a simple but powerful method for taking derivatives of functions 
@@ -335,7 +341,9 @@ in attitude.
         
     \subsection{Jacobian of Quaternion-Valued Functions}
         We now consider the case of a function that maps unit quaternions to unit
-        quaternions, $q' = f(q) : \Q \to \Q$. \todo{Let's make sure we're bing consistent with our usage of $\Q$ vs. $\mathbb{H}$.} Here we must also consider the non-trivial
+        quaternions, $q' = f(q) : \Q \to \Q$. 
+        % \todo{Let's make sure we're bing consistent with our usage of $\Q$ vs. $\mathbb{H}$.} 
+        Here we must also consider the non-trivial
         effect of a differential rotation applied to the output, i.e.:
         \begin{equation} \label{eq:dqoutput}
             L(q') \varphi(\phi') = f(L(q)\varphi(\phi)) .
@@ -357,7 +365,7 @@ in attitude.
 
 \section{Modifying Newton's Method} \label{sec:Wahbas}
 
-\todo{I would re-work this section to only talk about the details of doing it the ``correct'' way (i.e. consistent with the previous section). Then just call the standard version a ``naive Newton method in which the quaternion is re-normalized at each step'' and don't bother writing any of the mathematical details for that version. I think it will get confusing if you mix derivative types/notation.}
+% \todo{I would re-work this section to only talk about the details of doing it the ``correct'' way (i.e. consistent with the previous section). Then just call the standard version a ``naive Newton method in which the quaternion is re-normalized at each step'' and don't bother writing any of the mathematical details for that version. I think it will get confusing if you mix derivative types/notation.}
 
     Newton's method uses derivative information about a function to iteratively
     approximate its roots. For unconstrained systems, this method is highly effective,
@@ -368,25 +376,25 @@ in attitude.
     quaternion calculus introduced, Newton's method can be modified to implicitly account
     for these constraints. To demonstrate this, we will examine Wahba's Problem. In 1965,
     Grace Wahba proposed the criterion for a least squares estimate of a spacecraft's
-    attitude from vector measurements \cite{Wahba1965, markley2014fundamentals}. We will solve this
-    problem using a modified version of Newton's method that
-    exploits the true group structure of $SO(3)$ using the quaternion calculus presented
-    here.
+    attitude from vector measurements \cite{Wahba1965, markley2014fundamentals}. We will
+    solve this problem using a modified version of Newton's method that exploits the true
+    group structure of $SO(3)$ using the quaternion calculus presented here.
     
 
     \subsection{Methodology}
 % \todo{Let's keep our notation and language consistent for body vs. inertial frames. I propose ``body'' (B) and ``inertial'' or ``world'' (W), which is the standard in robotics.}
-    Given known vectors in some world frame, ${}^W v_i$, and measurements of these
-    vectors in some body fixed frame, ${}^B v_i$, our goal is to determine the relative
-    rotation from the body to world frame ${}^W q^B$, expressed as a quaternion. We
+    Given known vectors in some world frame, $\inframe{W}{v_i}$, and measurements of these
+    vectors in some body fixed frame, $\inframe{B}{v_i}$, our goal is to determine the relative
+    rotation from the body to world frame $\toframe{W}{B}{A(q)}$, expressed as a quaternion. We
     can define Wahba's loss function as the following: 
-    \begin{align} \label{eq:wahba_loss}
-        L &= \sum_i \norm{{}^W v_i - {}^W A(q)^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
-    \end{align} 
+    \begin{equation} \label{eq:wahba_loss}
+        L = \sum_i \norm{\inframe{W}{v_i} - \toframe{W}{B}{A(q)} \,\, \inframe{B}{v_i} }_2^2 
+           = \norm{r_i(q)}_2^2 
+    \end{equation} 
     % \todo{Let's leave the $w_i$ off for clarity since you're not using it later.}
     where $r_i(q)$ is the residual vector.
 
-    We can solve for ${}^W q^B$ using a nonlinear least squares method minimizing
+    We can solve for $\toframe{W}{B}{q}$ using a nonlinear least squares method minimizing
     Wahba's loss function:
     \begin{mini*}
         {q}{ \norm{r(q)}_2^2 }{}{}
@@ -397,7 +405,7 @@ in attitude.
     by setting the gradient to zero:
     \begin{equation} \label{eq:newton_foc}
         \begin{aligned}
-            \pdv{L}{q}^T &= \sum_i \pdv{r(q)}{q}^T r_i{q} := \bar{J}^T r(q) = 0 \\
+            \pdv{L}{q}^T &= \sum_i \pdv{r(q)}{q}^T r_i(q) := \bar{J}^T r(q) = 0 \\
               &= \sum_i (-2 H^T R(q)^T R({}^B \hat{v}_i)^T r(q).
         \end{aligned}
     \end{equation}
@@ -424,17 +432,18 @@ in attitude.
     % 	\end{algorithmic}
     % \end{algorithm}
     
-    We can minimize this loss function with respect to a differential rotation $\phi$,
-    we do this by simply ``correcting'' our Jacobian $\bar{J}$ using 
+    Applying the methodology from the previous section, we actually want to minimize 
+    \eqref{eq:wahba_loss} with respect to a differential rotation $\phi$, which 
+    we do by simply ``correcting'' our Jacobian $\bar{J}$ using 
     \eqref{eq:quat_jacobian}:
     \begin{equation} 
         {J} = \pdv{r(\mathbf{q} \otimes \varphi(\phi))}{\phi} = \pdv{r(q)}{q} G(q).
     \end{equation}
     We then use this to obtain our Newton step by using the Moore-Penrose psuedoinverse:
-    $\phi = ({J}^T {J})^{-1} {J}^T$. To obtain our next iterate, we ``add'' the
-    step using the correct notion of composition for the group: 
-    $\q_{k+1} = \q_k \otimes \varphi(\phi)$. This ``multiplicative'' Newton algorithm is 
-    summarized in Algorithm \ref{alg:mgn}.
+    $\phi = ({J}^T {J})^{-1} {J}^T$. To obtain our next iterate, we ``add'' the step
+    using the correct notion of composition for the group: $\q_{k+1} = \q_k \otimes
+    \varphi(\phi)$. This ``multiplicative'' Newton algorithm is summarized in Algorithm
+    \ref{alg:mgn}.
 
     \begin{algorithm} 
     	\begin{algorithmic}[1]
@@ -452,13 +461,15 @@ in attitude.
 
 
     \subsection{Results}
-    We compared this modified Newton's method with a na\"ive Newton's method where the quaternion is simply re-normalized at every iteration. 
-    As illustrated in Figure \ref{fig:wahba_convergence}, it is clear that the naive original method make progress initially, but fails to
-    exhibit the quadratic convergence typical of a Newton method. By optimizing directly 
-    in the space of unit quaternions, the modified method is able to achieve the expected quadratic convergence.
-    It should also be clear from the previous section that the adaptations to the original
-    Newton method are simple and straightforward, highlighting both the effectiveness and
-    value of the proposed approach.
+    We compared this modified Newton's method with a na\"ive Newton's method where the
+    quaternion is simply re-normalized at every iteration. As illustrated in Figure
+    \ref{fig:wahba_convergence}, it is clear that the naive original method makes progress
+    initially, but fails to exhibit the quadratic convergence typical of a Newton method.
+    By optimizing directly in the space of unit quaternions, the modified method is able
+    to achieve the expected quadratic convergence. It should also be clear from the 
+    previous section that the adaptations to the original Newton method are simple and
+    straightforward, highlighting both the effectiveness and value of the proposed
+    approach.
     \begin{figure}
 
         \centering
@@ -487,22 +498,22 @@ in attitude.
 
     We consider trajectory optimization problems of the form,
     \begin{mini}[2]
-        {x_{0:N},u_{0:N-1}}{\ell_f(x_N) + \sum_{k=0}^{N-1} \ell(x_k,u_k) }{}{}
+        {x_{0:N},u_{0:N-1}}{\ell_f(x_N) + \sum_{k=0}^{N-1} \ell_k(x_k,u_k) }{}{}
         \addConstraint{x_{k+1} = f(x_k,u_k)}
         \addConstraint{g_k(x_k,u_k)}{\leq 0}
         \addConstraint{h_k(x_k,u_k)}{=0}
         \label{discrete_trajopt},
     \end{mini}
     where $x$ and $u$ are the state and control vectors as described in Sec. \ref{sec:rigidbody_dynamics},
-    $f$ are the dynamics as defined in \eqref{eq:rigid_body_dynamics}, $\ell$ is a general
-    nonlinear cost function,
+    $f$ are the dynamics as defined in \eqref{eq:rigid_body_dynamics}, $\ell_k$ is a general
+    nonlinear cost function at a single time step,
     $N$ is the number of time steps, and $g_k$, $h_k$ are general nonlinear inequality and 
     equality constraints.
 
-    Like most gradient or Newton-based methods for optimization, ALTRO approximates the 
-    nonlinear functions $f, \ell, g,$ and $h$ with their first or second-order Taylor series
-    expansions. Leveraging the methods from Sec: \ref{sec:Quaternion_Calculus}, we adapt the
-    algorithm to optimize directly on the error state $\delta x \in \R^{12}$. 
+    Like most gradient or Newton-based methods for optimization, ALTRO approximates the
+    nonlinear functions $f, \ell, g,$ and $h$ with their first or second-order Taylor
+    series expansions. Leveraging the methods from Sec: \ref{sec:Quaternion_Calculus}, we
+    adapt the algorithm to optimize directly on the error state $\delta x \in \R^{12}$.
 
     We begin by linearizing the dynamics about the reference trajectory using
     \eqref{eq:quat_jacobian}. Our linearized error dynamics become
@@ -529,30 +540,31 @@ in attitude.
         \end{bmatrix}\!.
     \end{equation}
     
-    By applying \eqref{eq:quat_gradient} and \eqref{eq:quat_hessian} to our nonlinear cost
-    functions $\ell$ and 
-    \eqref{eq:quat_jacobian} to the nonlinear constraint functions $g_k$ and $h_k$, we can calculate
-    the second-order expansion 
+    By applying \eqref{eq:quat_gradient} and \eqref{eq:quat_hessian} to our nonlinear
+    cost functions $\ell$ and \eqref{eq:quat_jacobian} to the nonlinear constraint
+    functions $g_k$ and $h_k$, we can calculate the second-order expansion of the cost 
+    function:
     \begin{multline}
         \delta \ell(x,u) \approx  \half \delta x^T \ell_{xx} \delta x
             + \half \delta u^T \ell_{uu} \delta u + \delta_u^T \ell_{ux} \delta u \\
-            + \ell_x^T \delta x^T + \ell_u^T \delta u 
+            + \ell_x^T \delta x^T + \ell_u^T \delta u.
     \end{multline}
-    of the augmented Lagrangian cost function: \todo{I think you can safely leave out any references to the augmented Lagrangian, etc. and just talk about the cost function.}
-    \begin{equation}
-        \mathcal{L}_A = \mathcal{L}_N(x_N,\lambda_N,\mu_N) + 
-            \sum_{k=0}^{N-1} \mathcal{L}_k(x_k,u_k,\lambda_k,\mu_k)
-    \end{equation}
-    where
-    \begin{equation}
-        \mathcal{L}_k(x,u,\lambda,\mu) = \ell(x,u) + 
-            (\lambda + \half I_\mu c(x,u))^T c(x,u),
-    \end{equation}
-    with $c(x,u)$ being the concatenation of the constraints $f,g$, and $h$ at a given time step,
-    and $I_\mu$ the penalty matrix.
+    % \todo{I think you can safely leave out any references to the augmented Lagrangian,
+    % etc. and just talk about the cost function.}
+    % \begin{equation}
+    %     \mathcal{L}_A = \mathcal{L}_N(x_N,\lambda_N,\mu_N) + 
+    %         \sum_{k=0}^{N-1} \mathcal{L}_k(x_k,u_k,\lambda_k,\mu_k)
+    % \end{equation}
+    % where
+    % \begin{equation}
+    %     \mathcal{L}_k(x,u,\lambda,\mu) = \ell(x,u) + 
+    %         (\lambda + \half I_\mu c(x,u))^T c(x,u),
+    % \end{equation}
+    % with $c(x,u)$ being the concatenation of the constraints $f,g$, and $h$ at a given time step,
+    % and $I_\mu$ the penalty matrix.
 
     With this expansion, we calculate the expansion of the ``action-value function'' $Q(x,u)$
-    as normal:
+    as normal, including the extra terms from the augmented Lagrangian cost:
     \begin{align}
         Q_{xx} &= \ell_{xx} + A_{k}^T P_{k+1} A_{k} \label{Qxx_exp}\\
         Q_{uu} &= \ell_{uu} + B_{k}^T P_{k+1} B_{k} \label{Quu_exp}\\
@@ -577,61 +589,62 @@ in attitude.
     refer to the original paper \cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
-        In addition to the straight-forward modifications to the ALTRO algorithm itself, we
-        need to carefully consider the types of cost functions we minimize. We frequently
-        minimize costs that penalize distance from a goal state, e.g. $\half (x-x_g)^T Q
-        (x-x_g)$; However, na\"ive substraction of unit quaternions is ill-defined. We
-        propose two different cost functions that accomplish similar behavior.
-        For sake of clarity and space, we only consider the costs on the quaternion
-        variables: costs on the other states and the control variables remain unaffected.
+        In addition to the straight-forward modifications to the ALTRO algorithm itself,
+        we need to carefully consider the types of cost functions we minimize. We
+        frequently minimize costs that penalize distance from a goal state, e.g. $\half
+        (x-x_g)^T Q (x-x_g)$; However, na\"ive substraction of unit quaternions is
+        ill-defined. We propose the following cost function which penalizes the geodesic
+        distance between two unit quaternions \cite{Kuffner2004}, which we have found to
+        work well in practice. For sake of clarity and space, we only consider the costs
+        on the quaternion variables: costs on the other states and the control variables
+        remain unaffected.
+
+        \begin{equation} \label{eq:quat_geodesic}
+            J_\text{geo} = (1-\abs{q_g^T q}) ,
+        \end{equation}
+        whose gradient and Hessian are,
+        \begin{align}
+            \nabla J_\text{geo} &= \sign(q_d^T q) q_g^T G(q) \\
+            \nabla^2 J_\text{geo} &= \sign(q_d^T q) I_3 q_g^T q ,
+        \end{align}
+        where $\sign$ denotes the signum function.
         
-        \subsubsection{Error Quadratic} \label{sec:error_quadratic}
-            Rather than simple subtraction, we can use a quadratic function on the
-            three-parameter error state \eqref{eq:state_error}:
-            \begin{equation} \label{eq:error_quadratic}
-                J_\text{err} = \half \phi^T Q \phi 
-                = \half \left(\varphi^{-1}(\delta q)\right)^T Q 
-                        \left(\varphi^{-1}(\delta q)\right).
-            \end{equation}
-            where $\delta q = L(q_g)^T q$, and $\phi = \varphi{\delta q}$. The gradient
-            and Hessian of \eqref{eq:error_quadratic} are
-            \begin{equation}
-                \nabla J_\text{err }= \phi^T Q  D(\delta q)  G(\delta q)
-            \end{equation}
-            \begin{multline}
-                \nabla^2 J_\text{err} = 
-                    G(\delta q)^T \! \left(
-                    D(\delta q)^T Q D(\delta q) + \nabla D \right) G(\delta q)  \\
-                    + I_3 (\phi^T Q  D(\delta q)) \delta q %\\
-            \end{multline}
-            where, for the Cayley map,
-            \begin{equation}
-                D(q) = \pdv{\varphi^{-1}}{q} = -\frac{1}{q_s^2}\begin{bmatrix}
-                    q_v \;\; & -\frac{1}{q_s} I_3
-                \end{bmatrix}
-            \end{equation}
-            \begin{equation}
-                \nabla D = \pdv{q}(D(q)^T Q \phi) 
-                = -\frac{1}{q_s^2} \begin{bmatrix} 
-                    -2 \frac{q_v}{q_s}^T Q \phi & \phi^T Q \\
-                                   Q \phi & 0 \\
-                \end{bmatrix}.
-            \end{equation}
+        % \subsubsection{Error Quadratic} \label{sec:error_quadratic}
+        %     Rather than simple subtraction, we can use a quadratic function on the
+        %     three-parameter error state \eqref{eq:state_error}:
+        %     \begin{equation} \label{eq:error_quadratic}
+        %         J_\text{err} = \half \phi^T Q \phi 
+        %         = \half \left(\varphi^{-1}(\delta q)\right)^T Q 
+        %                 \left(\varphi^{-1}(\delta q)\right).
+        %     \end{equation}
+        %     where $\delta q = L(q_g)^T q$, and $\phi = \varphi{\delta q}$. The gradient
+        %     and Hessian of \eqref{eq:error_quadratic} are
+        %     \begin{equation}
+        %         \nabla J_\text{err }= \phi^T Q  D(\delta q)  G(\delta q)
+        %     \end{equation}
+        %     \begin{multline}
+        %         \nabla^2 J_\text{err} = 
+        %             G(\delta q)^T \! \left(
+        %             D(\delta q)^T Q D(\delta q) + \nabla D \right) G(\delta q)  \\
+        %             + I_3 (\phi^T Q  D(\delta q)) \delta q %\\
+        %     \end{multline}
+        %     where, for the Cayley map,
+        %     \begin{equation}
+        %         D(q) = \pdv{\varphi^{-1}}{q} = -\frac{1}{q_s^2}\begin{bmatrix}
+        %             q_v \;\; & -\frac{1}{q_s} I_3
+        %         \end{bmatrix}
+        %     \end{equation}
+        %     \begin{equation}
+        %         \nabla D = \pdv{q}(D(q)^T Q \phi) 
+        %         = -\frac{1}{q_s^2} \begin{bmatrix} 
+        %             -2 \frac{q_v}{q_s}^T Q \phi & \phi^T Q \\
+        %                            Q \phi & 0 \\
+        %         \end{bmatrix}.
+        %     \end{equation}
 
-        \subsubsection{Geodesic Distance} \label{sec:geodesic}
-            Alternatively, we can use the geodesic distance between two quaternions:
-            \cite{Kuffner2004},
-            \begin{equation} \label{eq:quat_geodesic}
-                J_\text{geo} = (1-\abs{q_g^T q}) ,
-            \end{equation}
-            whose gradient and Hessian are,
-            \begin{align}
-                \nabla J_\text{geo} &= \sign(q_d^T q) q_g^T G(q) \\
-                \nabla^2 J_\text{geo} &= \sign(q_d^T q) I_3 q_g^T q ,
-            \end{align}
-where $\sign$ denotes the signum function.
+        % \subsubsection{Geodesic Distance} \label{sec:geodesic}
 
-\todo{If the geodesic distance works better on all the examples, I vote for leaving out the error quadratic stuff.}
+% \todo{If the geodesic distance works better on all the examples, I vote for leaving out the error quadratic stuff.}
 
 \section{Experiments} \label{sec:experiments}
     In this section we present several trajectory optimization problems for systems that
@@ -666,7 +679,8 @@ where $\sign$ denotes the signum function.
     does not look within 40 degrees of the world-fixed sun vector ($^Wr_{sun}$). This angle constraint can be represented as a dot product between the two vectors expressed in the world frame:
     % \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
     \begin{equation}
-         [{}^W r_{sun}]^T[{}^W A(q) {}^B\, {}^Br_{cam} ] \leq \cos(40 ^\circ).
+         \left(\inframe{W}{r_{sun}}\right)^T 
+         \left(\toframe{W}{B}{A(q)} \, \inframe{B}{r_{cam}} \right) \leq \cos(40 ^\circ).
     \end{equation}
     The attitudes that satisfy this constraint comprise a non-convex set, with the constraint itself being nonlinear in the attitude quaternion. 
         \begin{figure}[H]
@@ -679,28 +693,29 @@ where $\sign$ denotes the signum function.
 ALTRO is able to reason about this nonlinear constraint, and account for the group structure present in the quaternion. From Figure \ref{fig:keepout} we can see that without the camera constraint present, the trajectory will pass through the keep-out zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO is able to converge on a trajectory that performs the slew in an efficient manner, while keeping the camera sufficiently far from the sun. 
 
     \subsection{Airplane Barrel Roll}
-\todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
+% \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
 
-        An airplane model with aerodynamic coefficients fit from real wind-tunnel data is
-        tasked to do a barrel roll by setting a high terminal cost for being upside-down,
-        see Fig. \ref{fig:barrellroll}. The solver is initialized with level flight trim
-        conditions. The convergence of the different versions of ALTRO is compared in Fig.
-        \ref{fig:c_max_convergence}. For both the quadrotor flip \todo{put the quadrotor comments in the quadrotor section.} and the airplane barrel 
-        roll, the modified version of ALTRO converged faster than original version.
-        For these highly aerobatic maneuvers, we achieve, as expected, better
-        performance by correctly leveraging the structure of the rotation group during
-        the optimization routine.
+        Our airplane model is a simple rigid body as defined in Section
+        \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag fit
+        from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do a
+        barrell roll by setting a high terminal cost for being upside-down, see Fig.
+        \ref{fig:barrellroll}. The solver is initialized with level flight trim
+        conditions. The convergence of the different versions of ALTRO is compared in
+        Fig. \ref{fig:c_max_convergence}. As expected, the modified version achieves
+        better convergence and faster solve times compared to the na\"ive version since
+        the expansions being provided to the algorithm more accurately capture the
+        relationship between the attitude state and the goal and constraints.
 
-		\todo{If we're not going to plot it and actually do an experimental comparison, I vote for leaving this stuff out.}
-        We also compared the ``error quadratic'' cost function described in Section
-        \ref{sec:error_quadratic} to the geodesic cost function in Section
-        \ref{sec:geodesic}. The geodesic cost was more efficient, both in term of
-        iterations and computation time, taking only 36 iterations and 1.8 ms/iteration
-        vs 76 iterations and 7.6 ms/iteration for the error quadratic. Not only is the
-        geodesic cost function much cheaper to compute, it also converges much faster
-        than the error quadratic cost function. This could be due to the strong nonlinearities
-        introduced when computing the quaternion error, making it more difficult to
-        optimize.
+		% \todo{If we're not going to plot it and actually do an experimental comparison, I vote for leaving this stuff out.}
+        % We also compared the ``error quadratic'' cost function described in Section
+        % \ref{sec:error_quadratic} to the geodesic cost function in Section
+        % \ref{sec:geodesic}. The geodesic cost was more efficient, both in term of
+        % iterations and computation time, taking only 36 iterations and 1.8 ms/iteration
+        % vs 76 iterations and 7.6 ms/iteration for the error quadratic. Not only is the
+        % geodesic cost function much cheaper to compute, it also converges much faster
+        % than the error quadratic cost function. This could be due to the strong nonlinearities
+        % introduced when computing the quaternion error, making it more difficult to
+        % optimize.
         
         \begin{figure}[h]
             \centering
@@ -719,16 +734,14 @@ ALTRO is able to reason about this nonlinear constraint, and account for the gro
         \end{figure}
 
     \subsection{Quadrotor Flip}
-    \todo{Cite the Penn quadrotor paper for the dynamics model.}
-        We optimized a 360 degree flip trajectory for a quadrotor using the 
-        modified version of ALTRO.
-	    Four intermediary ``keyframes'' were used to encourage the quadrotor to be at angles
-        of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around an approximately circular arc.
-        The quadrotor was constrained
-	    to stay above the floor and move to a goal state 2 meters away in the $+y$
-	    direction. The solver was initialized with a dynamically infeasible trajectory
-	    that linearly interpolates between the initial and final states, rotating the
-        quad around the x-axis a full \ang{360}.
+        We optimized a 360 degree flip trajectory for a quadrotor with dynamics adapated
+        from \cite{mellinger2012trajectory} using the modified version of ALTRO. Four
+        intermediary ``keyframes'' were used to encourage the quadrotor to be at angles
+        of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around an approximately circular
+        arc. The quadrotor was constrained to stay above the floor and move to a goal
+        state 2 meters away in the $+y$ direction. The solver was initialized with a
+        dynamically infeasible trajectory that linearly interpolates between the initial
+        and final states, rotating the quad around the x-axis a full \ang{360}.
 
 	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
 	    ALTRO. The original version of ALTRO, even after significant tuning efforts,

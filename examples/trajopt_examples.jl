@@ -147,6 +147,6 @@ p = @pgf Axis(
         },
         Coordinates(1:length(c_maxes[2]),c_maxes[2])
     ),
-    Legend("original","modified")
+    Legend("naive","modified")
 )
 pgfsave("paper/figures/c_max_convergence.tikz", p, include_preamble=false)
