@@ -369,30 +369,30 @@ in attitude.
     for these constraints. To demonstrate this, we will examine Wahba's Problem. In 1965,
     Grace Wahba proposed the criterion for a least squares estimate of a spacecraft's
     attitude from vector measurements \cite{Wahba1965, markley2014fundamentals}. We will solve this
-    problem using a standard nonlinear least squares method, as well as a method that
+    problem using a modified version of Newton's method that
     exploits the true group structure of $SO(3)$ using the quaternion calculus presented
     here.
     
 
     \subsection{Methodology}
-\todo{Let's keep our notation and language consistent for body vs. inertial frames. I propose ``body'' (B) and ``inertial'' or ``world'' (W), which is the standard in robotics.}
-    Given known vectors in some inertial frame, ${}^N v_i$, and measurements of these
+% \todo{Let's keep our notation and language consistent for body vs. inertial frames. I propose ``body'' (B) and ``inertial'' or ``world'' (W), which is the standard in robotics.}
+    Given known vectors in some world frame, ${}^W v_i$, and measurements of these
     vectors in some body fixed frame, ${}^B v_i$, our goal is to determine the relative
-    rotation from the body to inertial frame ${}^N q^B$, expressed as a quaternion. We
+    rotation from the body to world frame ${}^W q^B$, expressed as a quaternion. We
     can define Wahba's loss function as the following: 
     \begin{align} \label{eq:wahba_loss}
-        L &= \sum_i w_i \norm{{}^N v_i - {}^N A(q)^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
+        L &= \sum_i \norm{{}^W v_i - {}^W A(q)^B \,\, ^Bv_i }_2^2. = \norm{r_i(q)}_2^2 
     \end{align} 
-    \todo{Let's leave the $w_i$ off for clarity since you're not using it later.}
+    % \todo{Let's leave the $w_i$ off for clarity since you're not using it later.}
     where $r_i(q)$ is the residual vector.
 
-    We can solve for ${}^N q^B$ using a nonlinear least squares method minimizing
+    We can solve for ${}^W q^B$ using a nonlinear least squares method minimizing
     Wahba's loss function:
     \begin{mini*}
         {q}{ \norm{r(q)}_2^2 }{}{}
-        \addConstraint { q\in SO(3).}
+        \addConstraint { q\in \Q.}
     \end{mini*}
-    \todo{This should be $q \in \Q$ here, since unit quaternions are not isomorphic to $SO(3)$ (rotation matrices).}
+    % \todo{This should be $q \in \Q$ here, since unit quaternions are not isomorphic to $SO(3)$ (rotation matrices).}
     Following the typical approach for Newton's method, we minimize \eqref{eq:wahba_loss}
     by setting the gradient to zero:
     \begin{equation} \label{eq:newton_foc}
@@ -410,21 +410,21 @@ in attitude.
     the projection operator $\Pi(q) = q / \norm{q}$. This ``projected'' Newton approach
     is summarized in Algorithm \ref{alg:pgn}.
 
-    \begin{algorithm} 
-    	\begin{algorithmic}[1]
-    		\caption{Projected Gauss-Newton Method}\label{alg:pgn}
-    		\State $k = 0$
-    		\While{significant progress}
-    		    \State $J = \pdv{r(q_k)}{ \partial q}$ 
-    		    \State $ \delta q = -(J^TJ)^{-1}J^T r(q_k)$ 
-    		  %  \State $q_{n+1} = \text{normalize}(q_n + q_{step})$ 
-    		  \State $q_{k+1} = \Pi_{SO(3)}(q_k + \delta q)$ 
-    		    \State $k = k + 1$
-    		\EndWhile
-    	\end{algorithmic}
-    \end{algorithm}
+    % \begin{algorithm} 
+    % 	\begin{algorithmic}[1]
+    % 		\caption{Projected Gauss-Newton Method}\label{alg:pgn}
+    % 		\State $k = 0$
+    % 		\While{significant progress}
+    % 		    \State $J = \pdv{r(q_k)}{ \partial q}$ 
+    % 		    \State $ \delta q = -(J^TJ)^{-1}J^T r(q_k)$ 
+    % 		  %  \State $q_{n+1} = \text{normalize}(q_n + q_{step})$ 
+    % 		  \State $q_{k+1} = \Pi_{SO(3)}(q_k + \delta q)$ 
+    % 		    \State $k = k + 1$
+    % 		\EndWhile
+    % 	\end{algorithmic}
+    % \end{algorithm}
     
-    Alternatively, if we instead minimize with respect to a differential quaternion $\phi$,
+    Alternatively, if we instead minimize with respect to a differential quaternion $\phi$ \todo{Brian: is this supposed to be "differential rotation"?},
     we adapt the algorithm by simply ``correcting'' our Jacobian $J$ using 
     \eqref{eq:quat_jacobian}:
     \begin{equation} 
@@ -667,17 +667,19 @@ where $\sign$ denotes the signum function.
     \cite{Tracy2020}. We can guarantee the star tracker body fixed vector ($^Br_{st}$)
     does not look within 40 degrees of the inertial sun vector ($^Nr_{sun}$) by
     formulating the following constraint:
-    \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
+    % \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
     \begin{equation}
-        \langle ^N q ^B {}^Br_{st} , ^Nr_{sun}\rangle \leq \cos(40 ^\circ).
+         [{}^W r_{sun}]^T[{}^W A(q) {}^B\, {}^Br_{st} ] \leq \cos(40 ^\circ).
     \end{equation}
     %Due to this constraint on the feasible attitudes, an eigen-axis slew trajectory planner may end up violating this keep-out zone \cite{markley2014fundamentals}. ALTRO can generate a feasible trajectory for this problem since it is able to reason about the nonlinear flexible spacecraft dynamics, actuator constraints, and the star tracker line of sight constraint.
         \begin{figure}
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
             \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the star tracker line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
+            \label{fig:keepout}
         \end{figure}
-\todo{Talk a little about the results in the plot here.}
+% \todo{Talk a little about the results in the plot here.}
+From Figure \ref{fig:keepout} we can see that without the pointing constraint present, the trajectory will pass through the keep-out zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO is able to converge on a trajectory that . 
 
     \subsection{Airplane Barrel Roll}
 \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
