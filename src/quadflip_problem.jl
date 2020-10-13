@@ -125,14 +125,15 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
     opts = SolverOptions(
         cost_tolerance=1e-5,
         cost_tolerance_intermediate=1e-5,
-        constraint_tolerance=1e-4,
+        constraint_tolerance=1e-5,
         projected_newton_tolerance=1e-2,
         iterations_outer=40,
         penalty_scaling=10.,
         penalty_initial=0.1,
         show_summary=false,
         verbose_pn=false,
-        verbose=0
+        verbose=0,
+        projected_newton=false
     )
     return prob, opts
 end

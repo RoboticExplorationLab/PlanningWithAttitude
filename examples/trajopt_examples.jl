@@ -107,7 +107,7 @@ org = df[.!df.errstate,:]
 tab = vcat(map(1:3) do i
     [mod.prob[i] @sprintf("%i / %i", org.iters[i], mod.iters[i]) @sprintf("%.2f / %.2f", org.time[i], mod.time[i])]
 end...)
-latex_tabular("paper/figures/timing_results.tex",
+latex_tabular(joinpath(@__DIR__,"..","paper/figures/timing_results.tex"),
     Tabular("lll"),
     [
         Rule(:top),
@@ -149,4 +149,4 @@ p = @pgf Axis(
     ),
     Legend("naive","modified")
 )
-pgfsave("paper/figures/c_max_convergence.tikz", p, include_preamble=false)
+pgfsave(joinpath(@__DIR__, "..", "paper/figures/c_max_convergence.tikz"), p, include_preamble=false)
