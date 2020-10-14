@@ -89,7 +89,7 @@ Planning trajectories for floating-base robotic systems that experience
 large attitude changes is challenging due to the nontrivial group structure of 3D
 rotations. This paper introduces a powerful and accessible approach for 
 optimization-based planning on the space of rotations using only standard linear algebra and vector calculus. We demonstrate the effectiveness of the approach by adapting Newton's
-method to solve the canonical Wahba's problem, and modifying the trajectory optimization solver ALTRO to plan directly on the space of unit 
+method to solve the canonical Wahba's problem, and modify the trajectory optimization solver ALTRO to plan directly on the space of unit 
 quaternions, achieving superior convergence on problems involving significant changes 
 in attitude.
 %\keywords{trajectory optimization, motion planning, control, quaternions}
@@ -130,10 +130,11 @@ in attitude.
     Aoude2008}, projection operators \cite{Saccon2013}, or more general theory for
     optimization on manifolds \cites{watterson2018trajectory}. Nearly all of these
     methods rely heavily on principles from differential geometry and Lie group theory;
-    however, despite these works, many recent papers in the robotics community continue
+    However, despite these works, many recent papers in the robotics community continue
     to naively apply standard methods for motion planning and control with no regard for the
-    group structure of rigid body motion \cite{Alothman2016,deCrousaz2015,
-    Williams2017,Geisert2016}.
+    group structure of rigid body motion
+    %\cite{Alothman2016,deCrousaz2015, Williams2017,Geisert2016}
+    .
     
     In this paper, we make a departure from previous approaches to geometric planning and 
     control that rely heavily on ideas and notation from differential geometry, 
@@ -152,8 +153,8 @@ in attitude.
 
     \begin{itemize}
         \item A unified approach to quaternion differential calculus entirely based on standard linear algebra and vector calculus.
-        \item Derivation of a Newton-based algorithm for nonlinear optimization directly on the space of unit quaternions using our notation.
-        \item a fast and efficient solver for trajectory optimization problems with 
+        \item Derivation of a Newton-based algorithm for nonlinear optimization directly on the space of unit quaternions.
+        \item Implementation of a fast and efficient solver for trajectory optimization problems with 
         attitude dynamics and nonlinear constraints that correctly accounts for the group
         structure of 3D rotations.
     \end{itemize}
@@ -358,8 +359,9 @@ in attitude.
         \begin{equation} \label{eq:quat_jacobian}
             \nabla f(q) = H^T L(q')^T \pdv{f}{q} L(q) H = G(q')^T \pdv{f}{q} G(q).
         \end{equation}
-        The leading $G(q')^T$ comes from the fact that as $\phi' \to 0$, $L(q') f(q) \to
-        I_q$, where $I_q$ is the quaternion identity. Once again, \eqref{eq:quat_jacobian} holds (up to a constant) for any three-parameter attitude representation.
+        %The leading $G(q')^T$ comes from the fact that as $\phi' \to 0$, $L(q') f(q) \to
+        %I_q$, where $I_q$ is the quaternion identity.
+        Once again, \eqref{eq:quat_jacobian} holds (up to a constant) for any three-parameter attitude representation.
         
         %Differentiating through the inverse map, evaluated at the quaternion identity, we find that $\pdv*{\varphi^{-1}}{q}\to H^T$ for any three-parameter attitude representation.
 
@@ -370,90 +372,57 @@ in attitude.
 
     Newton's method uses derivative information about a function to iteratively
     approximate its roots. For unconstrained systems, this method is highly effective,
-    and can exhibit quadratic convergence. For constrained systems, the updated parameter
+    and can exhibit quadratic convergence rates. For constrained systems, the updates 
     can be projected back onto the feasible set at each iteration, but without the same
-    convergence guarantees. For the constraints on $SO(3)$, Newton's method struggles to
-    converge past a certain threshold due to this projection. By leveraging the
-    quaternion calculus introduced, Newton's method can be modified to implicitly account
-    for these constraints. To demonstrate this, we will examine Wahba's Problem. In 1965,
-    Grace Wahba proposed the criterion for a least squares estimate of a spacecraft's
-    attitude from vector measurements \cite{Wahba1965, markley2014fundamentals}. We will
-    solve this problem using a modified version of Newton's method that exploits the true
-    group structure of $SO(3)$ using the quaternion calculus presented here.
+    convergence guarantees.
+    %For the constraints on $SO(3)$, Newton's method struggles to
+    %converge past a certain threshold due to this projection.
+    
+    In this section, we will leverage the quaternion calculus results introduced in the previous section to modify Newton's method so that it implicitly accounts for the quaternion unit-norm constraint. Unlike the projection approach, this modified form of Newton's method retains the fast convergence rates associated with the unconstrained method. We will demonstrate this behavior on Wahba's Problem, a least-squares attitude estimation problem~\cite{Wahba1965, markley2014fundamentals}.
     
 
     \subsection{Methodology}
 % \todo{Let's keep our notation and language consistent for body vs. inertial frames. I propose ``body'' (B) and ``inertial'' or ``world'' (W), which is the standard in robotics.}
-    Given known vectors in some world frame, $\inframe{W}{w_i}$, and measurements of these
-    vectors in some body fixed frame, $\inframe{B}{v_i}$, our goal is to determine the relative
-    rotation from the body to world frame $\toframe{W}{B}{A(q)}$, expressed as a quaternion. We
-    can define Wahba's loss function as the following: 
-    \begin{equation} \label{eq:wahba_loss}
-        L = \sum_i \norm{\inframe{W}{w_i} - \toframe{W}{B}{A(q)} \,\, \inframe{B}{v_i} }_2^2 
-           = \norm{r_i(q)}_2^2 
-    \end{equation} 
-    % \todo{Let's leave the $w_i$ off for clarity since you're not using it later.}
-    where $r_i(q)$ is the residual vector.
-
-    We can solve for $\toframe{W}{B}{q}$ using a nonlinear least squares method minimizing
-    Wahba's loss function:
+    Given a set of known vectors in the world frame, $\inframe{W}{w_i}$, and measurements of these vectors in the body frame, $\inframe{B}{v_i}$, we seek the
+    rotation from the body to the world frame $\toframe{W}{B}{A(q)}$ that solves the following optimization problem, \todo{Kevin: Don't use $L$ here because it conflicts with \eqref{eq:Lmult}:}
     \begin{mini*}
-        {q}{ \norm{r(q)}_2^2 }{}{}
-        \addConstraint { q\in \Q.}
+        {q}{ L(q) }{}{}
+        \addConstraint { q\in \Q,}
     \end{mini*}
-    % \todo{This should be $q \in \Q$ here, since unit quaternions are not isomorphic to $SO(3)$ (rotation matrices).}
-    Following the typical approach for Newton's method, we minimize \eqref{eq:wahba_loss}
-    by setting the gradient to zero:
+    where Wahba's loss function $L(q)$ is,
+    \begin{equation} \label{eq:wahba_loss}
+        L(q) = \sum_i \norm{\inframe{W}{w_i} - A(q) \,\, \inframe{B}{v_i} }_2^2 
+           = \norm{r(q)}_2^2 ,
+    \end{equation} 
+    and $r(q)$ is the residual vector.
+
+
+    The Jacobian of $r(q)$ can be found using \eqref{eq:quat_jacobian} and \eqref{eq:quaternion_rotation}: \todo{Kevin: fix the second line of this equation:}
     \begin{equation} \label{eq:newton_foc}
         \begin{aligned}
-            \pdv{L}{q}^T &= \sum_i \pdv{r(q)}{q}^T r_i(q) := \bar{J}^T r(q) = 0 \\
-              &= \sum_i (-2 H^T R(q)^T R({}^B \hat{v}_i)^T r(q).
+            \nabla r(q) &= \pdv{r}{q} G(q) \\
+              &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) \right).
         \end{aligned}
     \end{equation}
-    which can be obtained from the chain rule and \eqref{eq:quaternion_rotation}. 
-
-    % Treating $q$ as a vector in $\R^4$, we obtain a solution to \eqref{eq:newton_foc}
-    % using the Moore-Penrose pseudoinverse, $\delta q = (J^T J)^{-1} J^T$, and our
-    % next candidate quaternion via simple addition, $q_{k+1} = q_k + \delta q$. Since
-    % $q_{k+1}$ will no longer be unit norm, we project it back on the unit sphere via
-    % the projection operator $\Pi(q) = q / \norm{q}$. This ``projected'' Newton approach
-    % is summarized in Algorithm \ref{alg:pgn}.
-
-    % \begin{algorithm} 
-    % 	\begin{algorithmic}[1]
-    % 		\caption{Projected Gauss-Newton Method}\label{alg:pgn}
-    % 		\State $k = 0$
-    % 		\While{significant progress}
-    % 		    \State $J = \pdv{r(q_k)}{ \partial q}$ 
-    % 		    \State $ \delta q = -(J^TJ)^{-1}J^T r(q_k)$ 
-    % 		  %  \State $q_{n+1} = \text{normalize}(q_n + q_{step})$ 
-    % 		  \State $q_{k+1} = \Pi_{SO(3)}(q_k + \delta q)$ 
-    % 		    \State $k = k + 1$
-    % 		\EndWhile
-    % 	\end{algorithmic}
-    % \end{algorithm}
-    
-    Applying the methodology from the previous section, we actually want to minimize 
-    \eqref{eq:wahba_loss} with respect to a differential rotation $\phi$, which 
-    we do by simply ``correcting'' our Jacobian $\bar{J}$ using 
-    \eqref{eq:quat_jacobian}:
-    \begin{equation} 
-        {J} = \pdv{r(\mathbf{q} \otimes \varphi(\phi))}{\phi} = \pdv{r(q)}{q} G(q).
+    Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
+    \begin{equation}
+    	\phi_k = ({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k).
     \end{equation}
-    We then use this to obtain our Newton step by using the Moore-Penrose psuedoinverse:
-    $\phi = ({J}^T {J})^{-1} {J}^T$. To obtain our next iterate, we ``add'' the step
-    using the correct notion of composition for the group: $\q_{k+1} = \q_k \otimes
-    \varphi(\phi)$. This ``multiplicative'' Newton algorithm is summarized in Algorithm
-    \ref{alg:mgn}.
+	The update is then applied using the composition for the group:
+	\begin{equation}
+		\q_{k+1} = \q_k \otimes \varphi(\phi_k)
+	\end{equation}.
+	This ``multiplicative'' Gauss-Newton method is summarized in Algorithm \ref{alg:mgn}.
 
     \begin{algorithm} 
     	\begin{algorithmic}[1]
     		\caption{Multiplicative Gauss-Newton Method}\label{alg:mgn}
     		\State $k = 0$
-    		\While{significant progress}
-    		    \State ${J} = \pdv{r(q_k)}{q} G(q_k)$ \Comment{quaternion adjusted Jacobian}
-    		    \State $ \phi = -({J}^T {J})^{-1} {J}^T r(q_k)$ 
-    		    \State $\q_{k+1} = \q_k \otimes \varphi(\phi)$ \Comment{apply step multiplicatively}
+    		\While{$\norm{\phi} > $ tolerance}
+    		    \State ${\nabla r} = \pdv{r(q_k)}{q} G(q_k)$ 
+    		    	\Comment{Compute Jacobian}
+    		    \State $ \phi = -({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k)$ \Comment{Compute update step}
+    		    \State $q_{k+1} = L(q_k) \varphi(\phi)$ \Comment{Apply update step}
     		    \State $k = k + 1$
     		\EndWhile
     	\end{algorithmic}
@@ -462,24 +431,15 @@ in attitude.
 
 
     \subsection{Results}
-    We compared this modified Newton's method with a na\"ive Newton's method where the
-    quaternion is simply re-normalized at every iteration. As illustrated in Figure
-    \ref{fig:wahba_convergence}, it is clear that the naive original method makes progress
-    initially, but fails to exhibit the quadratic convergence typical of a Newton method.
-    By optimizing directly in the space of unit quaternions, the modified method is able
-    to achieve the expected quadratic convergence. It should also be clear from the 
-    previous section that the adaptations to the original Newton method are simple and
-    straightforward, highlighting both the effectiveness and value of the proposed
-    approach.
+    Figure \ref{fig:wahba_convergence} compares the multiplicative Gauss-Newton method with a na\"ive Newton's method in which the quaternion is simply projected back onto the unit sphere at every iteration. That the na\"ive method makes progress
+    initially, but quickly stalls.
+    By correctly handling the group structure of unit quaternions, the multiplicative method is able
+    to maintain the fast convergence rates typical of Newton's method.
     \begin{figure}
 
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
-        \caption{Convergence comparison for Wahba's problem. By performing Newton's method
-        on the error quaternion and applying the result to the full quaternion we achieve
-        quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
-        error. The angle error is calculated relative to the true analytical solution obtained
-        via an SVD decomposition.}
+        \caption{Convergence comparison for Wahba's problem. By modfying Newton's method with the methods of section \ref{sec:Quaternion_Calculus},        quadratic convergence rates are achieved, while a na\"ive approach stalls after only a few itterations.}
         \label{fig:wahba_convergence}
     \end{figure}
     % \begin{figure}[H]
@@ -493,7 +453,7 @@ in attitude.
     % \end{figure}
 
 \section{Trajectory Optimization on $\R^n \times SO(3)$} \label{sec:trajopt}
-    Here we outline the modifications to the ALTRO solver \cite{howell2019altro}, to
+    Here we outline the modifications to the ALTRO solver \cite{howell2019altro} to
     solve trajectory optimization problems for rigid bodies, which extends easily to
     arbitrary systems whose state is in $\R^n \times SO(3)$. %ALTRO is an efficient solver for constrained nonlinear optimization problems that uses iterative LQR (iLQR) with an augmented Lagrangian framework.
 
@@ -514,12 +474,17 @@ in attitude.
     Like most gradient or Newton-based methods for optimization, ALTRO approximates the
     nonlinear functions $f, \ell, g,$ and $h$ with their first or second-order Taylor
     series expansions. Leveraging the methods from Sec: \ref{sec:Quaternion_Calculus}, we
-    adapt the algorithm to optimize directly on the error state $\delta x \in \R^{12}$.
+    adapt the algorithm to optimize directly on the error state $\delta x \in \R^{12}$:
+    \begin{equation} \label{eq:state_error}
+    	\delta x_k = \begin{bmatrix} 
+            r_k - \bar{r}_k \\ \varphi^{-1}(\bar{\q}_k^{-1} \otimes \q_k) \\ v_k - \bar{v}_k \\ \omega_k - \bar{\omega}_k 
+        \end{bmatrix} .
+    \end{equation}
 
-    We begin by linearizing the dynamics about the reference trajectory using
-    \eqref{eq:quat_jacobian}. Our linearized error dynamics become
+    We begin by linearizing the dynamics about the reference state and input trajectories, $\bar{x}$ and $\bar{u}$, using
+    \eqref{eq:quat_jacobian}. The linearized error dynamics become,
     \begin{equation} \label{eq:linearized_dynamics}
-        \delta x_{k+1} = A_k \delta x_k + B_k \delta u_k 
+        \delta x_{k+1} = A_k \delta x_k + B_k \delta u_k ,
     \end{equation}
     where \begin{equation}
         \begin{aligned}
@@ -527,12 +492,8 @@ in attitude.
             B_k = E(\bar{x}_{k+1})^T \pdv{f}{u}|_{\bar{x}_k,\bar{u}_k},
         \end{aligned}
     \end{equation}
-    and $\delta x_k \in \R^{12}$ and $E(x_k) \in \R^{12 \times 13}$ are the state error and state-error Jacobian, respectively:
-    \begin{equation} \label{eq:state_error}
-        \setlength\arraycolsep{1pt}
-        \delta x_k = \begin{bmatrix} 
-            r_k - \bar{r}_k \\ \varphi^{-1}(\bar{\q}_k^{-1} \otimes \q_k) \\ v_k - \bar{v}_k \\ \omega_k - \bar{\omega}_k 
-        \end{bmatrix}\!, \;
+    and $E(x_k) \in \R^{12 \times 13}$ is the error-state Jacobian:
+    \begin{equation} \label{eq:state_error_jacobian}
         E(x) = \begin{bmatrix}
             I_3 & & & \\
             & G(q) & & \\
@@ -540,8 +501,7 @@ in attitude.
             & & & I_3 \\
         \end{bmatrix}\!.
     \end{equation}
-    
-    By applying \eqref{eq:quat_gradient} and \eqref{eq:quat_hessian} to our nonlinear
+    By applying \eqref{eq:quat_gradient} and \eqref{eq:quat_hessian} to the nonlinear
     cost functions $\ell$ and \eqref{eq:quat_jacobian} to the nonlinear constraint
     functions $g_k$ and $h_k$, we can calculate the second-order expansion of the cost 
     function:
@@ -563,9 +523,8 @@ in attitude.
     % \end{equation}
     % with $c(x,u)$ being the concatenation of the constraints $f,g$, and $h$ at a given time step,
     % and $I_\mu$ the penalty matrix.
-
-    With this expansion, we calculate the expansion of the ``action-value function'' $Q(x,u)$
-    as normal, including the extra terms from the augmented Lagrangian cost:
+	
+	With these results, we can apply standard Newton and quasi-Newton techniques along the lines of Section \ref{sec:Wahbas}. We can also calculate a second-order expansion of the ``action-value function'' $Q(x,u)$ needed in differential dynamic programming (DDP) and LQR-based methods,
     \begin{align}
         Q_{xx} &= \ell_{xx} + A_{k}^T P_{k+1} A_{k} \label{Qxx_exp}\\
         Q_{uu} &= \ell_{uu} + B_{k}^T P_{k+1} B_{k} \label{Quu_exp}\\
@@ -574,36 +533,27 @@ in attitude.
         Q_u &= \ell_u + B_{k}^T p_{k+1} \label{Qu_exp},
     \end{align}
     from which we can calculate the quadratic expansion of the cost-to-go 
-    $P_k \in \R^{12 \times 12}$, $p_k \in \R^{12}$, and optimal linearized feedback gains 
-    $K_k \in \R^{m \times 12}$ and $d_k \in \R^m$ by starting at the terminal state and
-    resursing backward in time along the trajectory during the ``backward pass'' of the iLQR
-    algorithm. During the ``forward pass'', the dynamics are simulated forward in time using
-    the feedback gains computed during the backward pass. At each time step, the control is 
-    calculated using the linear feedback controller: 
+    $P_k \in \R^{12 \times 12}$, $p_k \in \R^{12}$, and optimal linear feedback gains 
+    $K_k \in \R^{m \times 12}$ and feed-forward corrections $d_k \in \R^m$ by starting at the terminal state and
+    performing a backward Riccati recursion as usual~\cite{li2004iterative,howell2019altro}.
+    
+    During the ``forward rollout'' of these methods, the dynamics are simulated forward in time using updated control inputs: 
     \begin{equation} \label{eq:mlqr_control}
-        u_k = K_k \delta x_k + \bar{u}_k.
+        u_k = \bar{u}_k - d_k - K_k \delta x_k.
     \end{equation}
     where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is
     computed using \eqref{eq:state_error}, with $x_k$ being the current state estimate
-    and $\bar{x}_k$ the state from the previous iteration. The rest of the algorithm is
-    left unchanged. For more details on the ALTRO algorithm, the reader is encouraged to
-    refer to the original paper \cite{howell2019altro}.
+    and $\bar{x}_k$ the state from the previous iteration. For more details on the ALTRO algorithm, which leverages ideas from both DDP and direct Newton methods, we refer the reader to~\cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
-        In addition to the straight-forward modifications to the ALTRO algorithm itself,
-        we need to carefully consider the types of cost functions we minimize. We
+        In addition to the straight-forward modifications to the ALTRO algorithm itself, some care must be taken in designing cost functions that are well-suited to unit quaternions. We
         frequently minimize costs that penalize distance from a goal state, e.g. $\half
-        (x-x_g)^T Q (x-x_g)$; However, na\"ive substraction of unit quaternions is
-        ill-defined. We propose the following cost function which penalizes the geodesic
-        distance between two unit quaternions \cite{Kuffner2004}, which we have found to
-        work well in practice. For sake of clarity and space, we only consider the costs
-        on the quaternion variables: costs on the other states and the control variables
-        remain unaffected.
-
+        (x-x_g)^T Q (x-x_g)$; However, na\"ive substraction of unit quaternions does not respect their group structure, and often results in undesired behavior. Instead, we have found the following cost function, which penalizes the geodesic
+        distance between two unit quaternions \cite{Kuffner2004}, to work well in practice:
         \begin{equation} \label{eq:quat_geodesic}
-            J_\text{geo} = (1-\abs{q_g^T q}) ,
+            J_\text{geo} = (1-\abs{q_g^T q}) .
         \end{equation}
-        whose gradient and Hessian are,
+        Its gradient and Hessian are,
         \begin{align}
             \nabla J_\text{geo} &= \sign(q_d^T q) q_g^T G(q) \\
             \nabla^2 J_\text{geo} &= \sign(q_d^T q) I_3 q_g^T q ,
@@ -670,60 +620,22 @@ in attitude.
         \caption{Trajectory Optimization Timing Results (naive/modified)}
     \end{table}
         
-    \subsection{Satellite Attitude Keep-Out}
-        % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
-        A spacecraft with flexible appendages must perform a 150 degree slew while
-        ensuring that a body-mounted camera does not cross within 40 degrees of the sun.
-        The attitudes that result in the camera pointing too close to the sun will be
-        referred to as a keep-out zone. The flexible body spacecraft dynamics are based
-        on equation \eqref{eq:rigid_body_dynamics}, with the addition of four reaction
-        wheels, and the three largest flexible modes \cite{Tracy2020}. In order to ensure
-        no damage to the camera, we must formulate a constraint that guarantees that the
-        camera line-of-sight body-fixed vector ($^Br_{cam}$) does not look within 40
-        degrees of the world-fixed sun vector ($^Wr_{sun}$). This angle constraint can be
-        represented as a dot product between the two vectors expressed in the world
-        frame:
-        % \todo{Let's use standard matrix notation here rather than the angle brackets, and let's also write the rotation correctly using $A(q)$ like in the other sections.}
-        \begin{equation}
-            \left(\inframe{W}{r_{sun}}\right)^T 
-            \left(\toframe{W}{B}{A(q)} \, \inframe{B}{r_{cam}} \right) \leq \cos(40 ^\circ).
-        \end{equation}
-        The attitudes that satisfy this constraint comprise a non-convex set, with the
-        constraint itself being nonlinear in the attitude quaternion.
-        \begin{figure}[H]
-            \centering
-            \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
-            \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the camera line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
-            \label{fig:keepout}
-        \end{figure}
-        % \todo{Talk a little about the results in the plot here.}
-        ALTRO is able to reason about this nonlinear constraint, and account for the group
-        structure present in the quaternion. From Figure \ref{fig:keepout} we can see that
-        without the camera constraint present, the trajectory will pass through the keep-out
-        zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO
-        is able to converge on a trajectory that performs the slew in an efficient manner, while
-        keeping the camera sufficiently far from the sun. 
-
-        The modifications didn't have a significant impact on runtime performance for this
-        example. In our experience, the computational benefits of the proposed methodology are
-        problem-dependent, especially for highly nonlinear systems. The following examples result
-        in more dynamic and aerobatic behaviors, where the computational benefit of the proposed
-        methodology is significant, including an example where the naive method failed to find a
-        good solution.
-
     \subsection{Airplane Barrel Roll}
 % \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
 
-        Our airplane model is a simple rigid body as defined in Section
+        A 180 degree barrel roll trajectory for a fixed-wing airplane was optimized. The airplane's dynamics model consists of the a simple rigid body as defined in Section
         \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag fit
         from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do a
-        barrell roll by setting a high terminal cost for being upside-down, see Fig.
-        \ref{fig:barrellroll}. The solver is initialized with level flight trim
+        barrel roll by setting a high terminal cost for deviations from an upside-down attitude (see Fig.
+        \ref{fig:barrellroll}). The solver was initialized with level flight trim
         conditions. The convergence of the different versions of ALTRO is compared in
         Fig. \ref{fig:c_max_convergence}. As expected, the modified version achieves
         better convergence and faster solve times compared to the na\"ive version since
         the expansions being provided to the algorithm more accurately capture the
         relationship between the attitude state and the goal and constraints.
+\todo{Brian: you mention constraints in the text and have it on the y-axis in Fig. 4, but you don't state what these constraints are in the text.}
+
+\todo{Brian: comment on the performance numbers in the text.}
 
 		% \todo{If we're not going to plot it and actually do an experimental comparison, I vote for leaving this stuff out.}
         % We also compared the ``error quadratic'' cost function described in Section
@@ -739,28 +651,28 @@ in attitude.
         \begin{figure}[ht]
             \centering
             \includegraphics[width=\columnwidth]{figures/barrellroll.png}
-            \caption{Barrel roll trajectory computed by iterative MLQR using a terminal cost to encourage an upside-down attitude.}
+            \caption{Barrel roll trajectory computed by ALTRO using a terminal cost to encourage an upside-down attitude.}
             \label{fig:barrellroll}
         \end{figure}
 
         \begin{figure}[ht]
             \centering
             \includegraphics[height=4cm,width=\columnwidth]{figures/c_max_convergence.tikz}
-            \caption{Constraint convergence when solving the barrel roll problem. Compares 
-            the convergence of the original version of ALTRO versus the new, modified version
-            that optimizing on the error state.}
+            \caption{Constraint satisfaction as a function of iteration when solving the barrel roll problem using ALTRO both with and without the modifications for optimizing unit quaternions.}
             \label{fig:c_max_convergence}
         \end{figure}
 
     \subsection{Quadrotor Flip}
-        We optimized a 360 degree flip trajectory for a quadrotor with dynamics adapated
-        from \cite{mellinger2012trajectory} using the modified version of ALTRO. Four
-        intermediary ``keyframes'' were used to encourage the quadrotor to be at angles
+        A 360 degree flip trajectory for a quadrotor was optimized with dynamics adapted
+        from \cite{mellinger2012trajectory}. Four
+        intermediary ``keyframes'' were used to encourage the quadrotor to reacj angles
         of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around an approximately circular
         arc. The quadrotor was constrained to stay above the floor and move to a goal
         state 2 meters away in the $+y$ direction. The solver was initialized with a
         dynamically infeasible trajectory that linearly interpolates between the initial
-        and final states, rotating the quad around the x-axis a full \ang{360}.
+        and final states, rotating the quadrotor around the x-axis a full \ang{360}.
+
+\todo{Brian: little more detail on cost weights. Any control cost? If we used the same cost function form for all of these (i.e. geodesic on q + quadratic on everything else), let's write it at the beginning of the experiment section.}
 
 	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
 	    ALTRO. The original version of ALTRO, even after significant tuning efforts,
@@ -772,6 +684,8 @@ in attitude.
 	    representation, since it passes through the singularities at $90\degree,
 	    180\degree$, and $360\degree$ associated with Euler angles, Rodrigues parameters, and
 	    Modified Rodrigues Parameters, respectively.
+	    
+	    \todo{Brian: you say the original version didn't work at all, but there are timing results for it in the table???}
 
         \begin{figure}[t]
             \centering
@@ -782,6 +696,45 @@ in attitude.
             }
             \label{fig:quad_flip}
         \end{figure}    
+
+    \subsection{Satellite Attitude Keep-Out}
+        % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
+        A spacecraft with flexible appendages was tasked to perform a 150 degree slew maneuver while
+        ensuring that a body-mounted camera did not point within 40 degrees ``keep-out zone'' around the sun vector. The spacecraft dynamics are presented in detail in~\cite{Tracy2020}, and are based
+        on equation \eqref{eq:rigid_body_dynamics} with the addition of six states to account for three flexible modes. Control torques are generated by four reaction wheels.
+        
+        \todo{Kevin: add some info on cost function, initial guess (if any), etc.}
+        
+        We enforce the camera keep-out zone can with the following constraint,
+        \begin{equation}
+            \left(\inframe{W}{r_{sun}}\right)^T 
+            \left(\toframe{W}{B}{A(q)} \, \inframe{B}{r_{cam}} \right) \leq \cos(40 ^\circ) ,
+        \end{equation}
+        where $^Br_{cam}$ is the camera line-of-sight unit vector in the body frame and $^Wr_{sun}$ is the unit vector pointing to the sun in the world frame. The attitudes that satisfy this constraint comprise a non-convex set, with the
+        constraint itself being nonlinear in $q$.
+        \begin{figure}[H]
+            \centering
+            \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
+            \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the camera line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
+            \label{fig:keepout}
+        \end{figure}
+        % \todo{Talk a little about the results in the plot here.}
+        
+        \todo{Kevin: looks like both versions of ALTRO worked fine on this problem, so we should probably not say all this group stuff. Maybe just comment on the timing results and try to offer an explanation.}
+        
+        ALTRO is able to reason about this nonlinear constraint, and account for the group
+        structure present in the quaternion. From Figure \ref{fig:keepout} we can see that
+        without the camera constraint present, the trajectory will pass through the keep-out
+        zone, making the trajectory infeasible. With the keep-out zone constraint present, ALTRO
+        is able to converge on a trajectory that performs the slew in an efficient manner, while
+        keeping the camera sufficiently far from the sun. 
+
+        The modifications didn't have a significant impact on runtime performance for this
+        example. In our experience, the computational benefits of the proposed methodology are
+        problem-dependent, especially for highly nonlinear systems. The following examples result
+        in more dynamic and aerobatic behaviors, where the computational benefit of the proposed
+        methodology is significant, including an example where the naive method failed to find a
+        good solution.
     
 
 \section{Conclusions} \label{sec:conclusion}
@@ -792,6 +745,7 @@ in attitude.
     \ref{fig:wahba_convergence}), while also offering improvements for nonlinear constrained
     trajectory optimization for floating-base systems (see Table \ref{tab:timing_results}).
     
+    \todo{This is a really nice pitch. Can we say something like this in the intro?}
     With the modifications presented, ALTRO can solve problems few other methods for
     trajectory optimization can. Many state-of-the-art methods, such as direct
     collocation or sequential convex programming, rely on commercial, proprietary, or
@@ -810,7 +764,7 @@ in attitude.
     systems, such as humanoids or quadrupeds, represented in
     ``maximal'' coordinates that include the 3D orientation of each body \cite{brudigam2020linear}. 
 
-\paragraph*{Acknowledgements}
+\section*{Acknowledgements}
 This material is based upon work supported by the National Science Foundation Graduate
 Research Fellowship Program under Grant No. DGE-1656518. Any opinions, findings, and
 conclusions or recommendations expressed in this material are those of the author(s) and
