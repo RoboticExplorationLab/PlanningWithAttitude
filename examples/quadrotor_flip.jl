@@ -16,9 +16,6 @@ using Rotations
 using Colors
 
 ## Try ALTRO
-# prob = gen_quad_flip(UnitQuaternion, slack=false, vecmodel=false, renorm=true,
-#     costfun=QuatLQRCost
-# )
 prob,opts = QuadFlipProblem(UnitQuaternion, slack=false, vecmodel=false, renorm=true,
     costfun=QuatLQRCost
 )

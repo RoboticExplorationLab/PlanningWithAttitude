@@ -406,10 +406,12 @@ in attitude.
 
 
     The Jacobian of $r(q)$ can be found using \eqref{eq:quat_gradient}:
-    \begin{align} \label{eq:newton_foc}
-            \nabla r(q) &= \pdv{r}{q} G(q) \\
-              &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) G(q)\right).
-    \end{align}
+    \begin{equation} \label{eq:newton_foc}
+            \nabla r(q) = \pdv{r}{q} G(q)
+    \end{equation}
+    \begin{equation}
+            \nabla r_i(q) = -2 H^T R(q)^T R(\inframe{B}{\hat{v}_i}) G(q)
+    \end{equation}
     Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
 
     \begin{equation}
@@ -620,7 +622,7 @@ in attitude.
     linear and angular velocity, respectively.
     
     Timing results are summarized in Table \ref{tab:timing_results}. All experiments are 
-    solved to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 3rd
+    solved to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 4th 
     order Runge-Kutta integrator. The results were run on a desktop computer with an AMD
     Ryzen 2950x processor with 40 GB of RAM. Code for all experiments is available on
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
@@ -654,7 +656,7 @@ in attitude.
         better convergence and faster solve times compared to the na\"ive version since
         the expansions being provided to the algorithm more accurately capture the
         relationship between the attitude state and the goal and constraints. For this 
-        relatively simple problem, we gained a modest 7\% improvement in runtime, despite
+        relatively simple problem, we gained a modest 11\% improvement in runtime, despite
         the additional matrix multiplications when calculating the cost and constraint
         expansions.
 

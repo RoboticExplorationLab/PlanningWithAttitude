@@ -161,10 +161,10 @@ function dcm_from_q(q)
 	return I + 2*skew(v)*(s*I + skew(v))
 end
 
-function SatelliteKeepOutProblem(constrained::Bool=true; vecstate::Bool=false, costfun=LQRCost)
+function SatelliteKeepOutProblem(constrained::Bool=true; vecstate::Bool=false, 
+        costfun=LQRCost, N = 401, termcon = :quatvec, integration=RD.RK4, kwargs...)
 	# Discretization
 	tf = 100.0
-	N = 401
 	dt = tf/(N-1)
 
 	# Model
@@ -209,7 +209,7 @@ function SatelliteKeepOutProblem(constrained::Bool=true; vecstate::Bool=false, c
 	end
 
 	## Solve
-	prob = Problem(model, obj, xf, tf, x0=x0,constraints = cons,N=N;integration=RD.RK4)
+	prob = Problem(model, obj, xf, tf, x0=x0,constraints = cons,N=N;integration=integration)
 	# U0 = [@SVector randn(m) for k = 1:N-1] .* 1e-1
 	# initial_controls!(prob, U0)
 
@@ -223,7 +223,8 @@ function SatelliteKeepOutProblem(constrained::Bool=true; vecstate::Bool=false, c
 		projected_newton_tolerance = 1e-4,
 		show_summary = true,
 		projected_newton = false,
-		verbose_pn = 1
+        verbose_pn = 1;
+        kwargs...
 	)
 	return prob, opts
 end

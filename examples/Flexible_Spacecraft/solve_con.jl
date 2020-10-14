@@ -13,14 +13,18 @@ using Altro
 
 const TO = TrajectoryOptimization
 
+using PlanningWithAttitude: post_process, dcm_from_q
+
 ##
 prob,opts = SatelliteKeepOutProblem(vecstate=true, costfun=LQRCost)
 prob,opts = SatelliteKeepOutProblem(vecstate=false, costfun=QuatLQRCost)
-solver = ALTROSolver(prob,opts)
+solver = ALTROSolver(prob, opts)
 solve!(solver)
 
 
 ##
+bodyvec = prob.constraints[3].bodyvec
+keepoutdir = prob.constraints[3].keepoutdir
 ω_hist, q_hist, u_hist,η_hist, ηd_hist, r_hist,θ_hist = post_process(solver)
 
 keepout_truth = zeros(size(q_hist,2))
@@ -31,6 +35,10 @@ for i = 1:size(q_hist,2)
 	q = q_hist[:,i]
 	g_hist[:,i] = q[2:4]/q[1]
 end
+
+using Plots
+plot(keepout_truth)
+plot(controls(solver))
 
 mat"
 figure

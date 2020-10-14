@@ -42,7 +42,7 @@ results_path = joinpath(@__DIR__, "timing_results.jld2")
 Barrell Roll
 """
 args = (
-    integration = RK3,
+    integration = RK4,
     termcon = :quatvec,
     # projected_newton = false,
     show_summary=true
@@ -51,12 +51,11 @@ args = (
 ## Original Method
 prob,opts = YakProblems(vecstate=true, costfun=:Quadratic; args...) 
 solver = ALTROSolver(prob, opts)
-solve!(solver)
 add_result!(:barrellroll, false, solver)
 
 ## Modified Method
 prob,opts = YakProblems(vecstate=false, costfun=:QuatLQR; args...) 
-solver = ALTROSolver(prob, opts)
+solver = ALTROSolver(prob, opts, show_summary=true)
 add_result!(:barrellroll, true, solver)
 
 @save results_path results 
@@ -70,7 +69,7 @@ solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true)
 add_result!(:quadflip, false, solver)
 
 ## Modified Method
-prob,opts = QuadFlipProblem(vecmodel=false, renorm=true, costfun=QuatLQRCost)
+prob,opts = QuadFlipProblem(vecmodel=false, renorm=true, costfun=QuatLQRCost; args...)
 solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true)
 add_result!(:quadflip, true, solver)
 
@@ -85,7 +84,7 @@ solver = ALTROSolver(prob, opts)
 add_result!(:satellite, false, solver)
 
 ## Modified Method
-prob,opts = SatelliteKeepOutProblem(vecstate=false, costfun=QuatLQRCost)
+prob,opts = SatelliteKeepOutProblem(vecstate=false, costfun=QuatLQRCost; args...)
 solver = ALTROSolver(prob, opts)
 add_result!(:satellite, true, solver)
 

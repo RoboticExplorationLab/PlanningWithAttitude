@@ -1,7 +1,7 @@
 using RobotZoo: Quadrotor
 
 function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=false, 
-        renorm::Bool=false, costfun=LQRCost, integration=RD.RK4)
+        renorm::Bool=false, costfun=LQRCost, integration=RD.RK3, termcon=:none, kwargs...)
     model = Quadrotor{Rot}()
     if renorm
         model = QuatRenorm(model)
@@ -122,7 +122,7 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
     end
     initial_states!(prob, X_guess)
 
-    opts = SolverOptions(
+    opts = SolverOptions(;
         cost_tolerance=1e-5,
         cost_tolerance_intermediate=1e-5,
         constraint_tolerance=1e-5,
@@ -133,7 +133,8 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
         show_summary=false,
         verbose_pn=false,
         verbose=0,
-        projected_newton=true
+        projected_newton=true, 
+        kwargs...
     )
     return prob, opts
 end
