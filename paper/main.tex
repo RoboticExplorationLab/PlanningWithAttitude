@@ -392,27 +392,26 @@ in attitude.
     \subsection{Methodology}
 % \todo{Let's keep our notation and language consistent for body vs. inertial frames. I propose ``body'' (B) and ``inertial'' or ``world'' (W), which is the standard in robotics.}
     Given a set of known vectors in the world frame, $\inframe{W}{w_i}$, and measurements of these vectors in the body frame, $\inframe{B}{v_i}$, we seek the
-    rotation from the body to the world frame $\toframe{W}{B}{A(q)}$ that solves the following optimization problem, \todo{Kevin: Don't use $L$ here because it conflicts with \eqref{eq:Lmult}:}
+    rotation from the body to the world frame $\toframe{W}{B}{A(q)}$ that solves the following optimization problem,
     \begin{mini*}
-        {q}{ L(q) }{}{}
+        {q}{ W(q) }{}{}
         \addConstraint { q\in \Q,}
     \end{mini*}
-    where Wahba's loss function $L(q)$ is,
+    where Wahba's loss function $W(q)$ is,
     \begin{equation} \label{eq:wahba_loss}
-        L(q) = \sum_i \norm{\inframe{W}{w_i} - A(q) \,\, \inframe{B}{v_i} }_2^2 
+        W(q) = \sum_i \norm{\inframe{W}{w_i} - A(q) \,\, \inframe{B}{v_i} }_2^2 
            = \norm{r(q)}_2^2 ,
     \end{equation} 
     and $r(q)$ is the residual vector.
 
 
-    The Jacobian of $r(q)$ can be found using \eqref{eq:quat_jacobian} and \eqref{eq:quaternion_rotation}: \todo{Kevin: fix the second line of this equation:}
-    \begin{equation} \label{eq:newton_foc}
-        \begin{aligned}
+    The Jacobian of $r(q)$ can be found using \eqref{eq:quat_gradient}:
+    \begin{align} \label{eq:newton_foc}
             \nabla r(q) &= \pdv{r}{q} G(q) \\
-              &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) \right).
-        \end{aligned}
-    \end{equation}
-    Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update $\phi_k$ via the Moore-Penrose psuedoinverse:
+              &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) G(q)\right).
+    \end{align}
+    Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
+
     \begin{equation}
     	\phi_k = ({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k).
     \end{equation}
