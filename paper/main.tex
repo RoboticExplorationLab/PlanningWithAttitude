@@ -408,7 +408,7 @@ in attitude.
     The Jacobian of $r(q)$ can be found using \eqref{eq:quat_gradient}:
     \begin{align} \label{eq:newton_foc}
             \nabla r(q) &= \pdv{r}{q} G(q) \\
-              &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) G(q)\right).
+              &= -2 H^T R(q)^T \left( \sum_i R({}^B \hat{v}_i) \right) G(q) .
     \end{align}
     Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
 
@@ -639,8 +639,8 @@ in attitude.
         Section \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag
         fit from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do
         a barrel roll by constraining the terminal state to upside-down (see Fig.
-        \ref{fig:barrellroll}). To avoid issues with the double-cover and integration error,
-        the following was used to enforce a terminal orientation to $\bar{q}$:
+        \ref{fig:barrellroll}). To mitigate issues with integration error and drift in the magnitude of the quaternion,
+        the following constraint function was used to enforce a terminal orientation of $\bar{q}$:
         \begin{equation}
             \frac{q_v}{\norm{q}} - \bar{q}_v
                 \sign\left(\bar{q}^T \frac{q }{ \norm{q}}\right) = 0
@@ -752,29 +752,13 @@ in attitude.
 \section{Conclusions} \label{sec:conclusion}
     We have presented a general, unified method for optimization-based planning and control for rigid-body
     systems with arbitrary attitude using standard linear algebra and vector calculus.
-    We have demonstrated that the application of this methodology is straightforward and
-    yields substantial improvements in the convergence of Newton-based methods (see Fig. 
-    \ref{fig:wahba_convergence}), while also offering improvements for nonlinear constrained
-    trajectory optimization for floating-base systems (see Table \ref{tab:timing_results}).
+    The application of this methodology is straightforward and
+    yields substantial improvements in the convergence of Newton and DDP-based methods, while also offering improvements for nonlinear constrained
+    trajectory optimization for floating-base systems.
     
-    \todo{This is a really nice pitch. Can we say something like this in the intro?}
-    With the modifications presented, ALTRO can solve problems few other methods for
-    trajectory optimization can. Many state-of-the-art methods, such as direct
-    collocation or sequential convex programming, rely on commercial, proprietary, or
-    general-purpose solvers whose internal numerics often are abstracted away from the
-    user. By exploiting the unique structure of both the trajectory optimization problem
-    and the rotation group, ALTRO will likely be able to solve more challenging problems
-    with performance.
+    Many state-of-the-art trajectory optimization methods, including direct collocation and sequential convex programming, rely on general-purpose optimization solvers whose internal numerical methods are not exposed to the user. Therefore, these methods are unable to exploit the full structure of both the trajectory optimization problem and the rotation group at a low level. In contrast, we are able to implement deep, native support for quaternions into the ALTRO solver, making it possible to solve more challenging problems with higher performance than other algorithms.
 
-    The methods presented here can easily be leveraged to adapt other classes
-    of gradient or Newton-based algorithms to exploit the structure of 3D rotations. Future
-    work may include adaptation of methods for state estimation, localization, design, or 
-    other methods for motion planning such as direct collocation. 
-    
-    Future work will focus on continued 
-    refinement of ALTRO and performance improvements for use in real-time model-predictive control applications, as well as extensions to multi-body robotic
-    systems, such as humanoids or quadrupeds, represented in
-    ``maximal'' coordinates that include the 3D orientation of each body \cite{brudigam2020linear}. 
+    In future work, we plan to apply ALTRO to real-time model-predictive control problems for aerial vehicles like quadrotors and airships that experience large attitude changes. The methods we have presented can also be leveraged to adapt other classes of gradient or Newton-based algorithms to exploit the structure of 3D rotations. Future directions beyond trajectory optimization may include simulation and planning methods that leverage maximal-coordinate formulations of multi-body dynamics~\cite{brudigam2020linear}, system-identification for complex multi-body systems and fixed-wing aircraft in post-stall conditions, and state estimation for spacecraft with sparse measurements. 
 
 \section*{Acknowledgements}
 This work was supported by a NASA Early Career Faculty Award (Grant Number 80NSSC18K1503).
