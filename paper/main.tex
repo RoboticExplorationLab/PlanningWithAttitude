@@ -130,33 +130,40 @@ in attitude.
     Aoude2008}, projection operators \cite{Saccon2013}, or more general theory for
     optimization on manifolds \cites{watterson2018trajectory}. Nearly all of these
     methods rely heavily on principles from differential geometry and Lie group theory;
-    However, despite these works, many recent papers in the robotics community continue
+    however, despite these works, many recent papers in the robotics community continue
     to naively apply standard methods for motion planning and control with no regard for the
-    group structure of rigid body motion
+    group structure of rigid body motion.
     %\cite{Alothman2016,deCrousaz2015, Williams2017,Geisert2016}
-    .
     
-    In this paper, we make a departure from previous approaches to geometric planning and 
-    control that rely heavily on ideas and notation from differential geometry, 
-    and instead use only basic mathematical tools from linear algebra and vector calculus that 
-    should be familiar to most roboticists. In Sec. \ref{sec:Quaternion_Calculus} we introduce 
-    an approach to quaternion differential calculus similar to \cite{Mandic2011,Xu2016}, but significantly simpler and more general, enabling straight-forward adaptation of 
-    existing algorithms to systems with quaternion states. 
-    For concreteness, we then apply our method to the canonical
-    Wahba's problem~\cite{Wahba1965} in Sec. \ref{sec:Wahbas}, and demonstrate superior convergence to approaches that
-    fail to properly account for the group structure. 
-    In Sec. \ref{sec:trajopt} we extend these ideas to the problem of trajectory optimization,
-    and detail modifications to ALTRO, a state-of-the-art constrained trajectory optimization
-    solver, and demonstrate performance gains on several benchmark problems.
-    %To our knowledge, there does not currently exist a solver that is capable of leveraging the unique Markovian structure of the fixed-horizon trajectory optimization problem while correctly accounting for the group structure of 3D rotations.
+    In this paper, we make a departure from previous approaches to geometric planning and
+    control that rely heavily on ideas and notation from differential geometry, and
+    instead use only basic mathematical tools from linear algebra and vector calculus
+    that should be familiar to most roboticists. In Sec. \ref{sec:Quaternion_Calculus} we
+    introduce an approach to quaternion differential calculus similar to
+    \cite{Mandic2011,Xu2016}, but significantly simpler and more general, enabling
+    straight-forward adaptation of existing algorithms to systems with quaternion states.
+    For concreteness, we then apply our method to the canonical Wahba's
+    problem~\cite{Wahba1965} in Sec. \ref{sec:Wahbas}, and demonstrate superior
+    convergence to approaches that fail to properly account for the group structure. In
+    Sec. \ref{sec:trajopt} we extend these ideas to the problem of trajectory
+    optimization, and detail modifications to ALTRO, a state-of-the-art constrained
+    trajectory optimization solver, and demonstrate performance gains on several
+    benchmark problems. With the modifications presented in this paper, ALTRO explicitly 
+    leverages both the structure of the trajectory optimization problem as well as the 
+    group structure of 3D rotations, making it uniquely well-suited to solving challenging
+    problems with near real-time performance.
+
+    %To our knowledge, there does not currently exist a solver that is capable of leveraging the unique Markovian structure of the fixed-horizon trajectory optimization problem while correctly accounting for the group structure of 3D rotations. 
     In summary, our contributions include:
 
     \begin{itemize}
-        \item A unified approach to quaternion differential calculus entirely based on standard linear algebra and vector calculus.
-        \item Derivation of a Newton-based algorithm for nonlinear optimization directly on the space of unit quaternions.
-        \item Implementation of a fast and efficient solver for trajectory optimization problems with 
-        attitude dynamics and nonlinear constraints that correctly accounts for the group
-        structure of 3D rotations.
+        \item A unified approach to quaternion differential calculus entirely based on
+        standard linear algebra and vector calculus.
+        \item Derivation of a Newton-based algorithm for nonlinear optimization directly
+        on the space of unit quaternions.
+        \item Implementation of a fast and efficient solver for trajectory optimization
+        problems with attitude dynamics and nonlinear constraints that correctly accounts
+        for the group structure of 3D rotations.
     \end{itemize}
 
 
@@ -361,7 +368,8 @@ in attitude.
         \end{equation}
         %The leading $G(q')^T$ comes from the fact that as $\phi' \to 0$, $L(q') f(q) \to
         %I_q$, where $I_q$ is the quaternion identity.
-        Once again, \eqref{eq:quat_jacobian} holds (up to a constant) for any three-parameter attitude representation.
+        Once again, \eqref{eq:quat_jacobian} holds (up to a constant) for any
+        three-parameter attitude representation.
         
         %Differentiating through the inverse map, evaluated at the quaternion identity, we find that $\pdv*{\varphi^{-1}}{q}\to H^T$ for any three-parameter attitude representation.
 
@@ -439,18 +447,12 @@ in attitude.
 
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
-        \caption{Convergence comparison for Wahba's problem. By modfying Newton's method with the methods of section \ref{sec:Quaternion_Calculus},        quadratic convergence rates are achieved, while a na\"ive approach stalls after only a few itterations.}
+        \caption{Convergence comparison for Wahba's problem. By modfying Newton's method
+        with the methods of section \ref{sec:Quaternion_Calculus}, quadratic convergence
+        rates are achieved, while a na\"ive approach stalls after only a few
+        iterations.}
         \label{fig:wahba_convergence}
     \end{figure}
-    % \begin{figure}[H]
-    %     \centering
-    %     \includegraphics[width=\columnwidth, height=5cm]{figures/kevins_plots/convergence_plot.tikz}
-    %     \caption{Convergence comparison for Wahba's problem. By performing Newton's method
-    %     on the error quaternion and applying the result to the full quaternion we achieve
-    %     quadratic convergence, whereas the more na\"ive approach doesn't converge to zero
-    %     error.}
-    %     \label{fig:wahba_convergence}
-    % \end{figure}
 
 \section{Trajectory Optimization on $\R^n \times SO(3)$} \label{sec:trajopt}
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro} to
@@ -543,7 +545,9 @@ in attitude.
     \end{equation}
     where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is
     computed using \eqref{eq:state_error}, with $x_k$ being the current state estimate
-    and $\bar{x}_k$ the state from the previous iteration. For more details on the ALTRO algorithm, which leverages ideas from both DDP and direct Newton methods, we refer the reader to~\cite{howell2019altro}.
+    and $\bar{x}_k$ the state from the previous iteration. 
+    For more details on the ALTRO algorithm, which leverages ideas from both DDP and
+    direct Newton methods, we refer the reader to~\cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
         In addition to the straight-forward modifications to the ALTRO algorithm itself, some care must be taken in designing cost functions that are well-suited to unit quaternions. We
@@ -601,15 +605,26 @@ in attitude.
     In this section we present several trajectory optimization problems for systems that
     undergo large changes in attitude: an airplane barrel roll, a quadrotor flip, and a
     satellite with flexible solar panels that must slew to a new orientation while
-    avoiding a keep-out zone. All results were run on a desktop computer with an AMD
-    Ryzen 2950x processor with 40 GB of RAM. All problems are run using ALTRO, first
-    without any of the modifications presented in the current paper, analagous to the
-    naive Newton's method in section \ref{sec:Wahbas} and labeled ``naive'', and then
-    using the modifications listed in Sec. \ref{sec:trajopt} and the geodesic cost
-    function described in Sec. \ref{sec:cost_functions}, labeled ``modified''. Timing
-    results are summarized in Table \ref{tab:timing_results}. All experiments were solved
-    to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 4th order
-    Runge-Kutta integrator. Code for all experiments is available on
+    avoiding a keep-out zone.    
+    All problems are run using ALTRO, first without any of the modifications presented in
+    the current paper, analagous to the naive Newton's method in section \ref{sec:Wahbas}
+    and labeled ``naive'', and then using the modifications listed in Sec.
+    \ref{sec:trajopt} and the geodesic cost function described in Sec.
+    \ref{sec:cost_functions}, labeled ``modified''. All cost functions were of the
+    following form:
+    \begin{align}
+        \ell_\text{naive}(x, \bar{x}, Q) &= \half (x - \bar{x})^T Q (x - \bar{x}) \\
+        \ell_\text{modified}(x, \bar{x}, Q) &= \half (x-\bar{x})^T \bar{Q} (x-\bar{x}) + w (1
+            \pm \bar{q}^T q)
+    \end{align}
+    where $\bar{x}$ is the reference state and $\bar{Q} = \text{diag}(Q_r, \vec{0}_4,
+    Q_v, Q_\omega)$, with $Q_r,Q_v,Q_\omega$ being the weights of $Q$ for position, and
+    linear and angular velocity, respectively.
+    
+    Timing results are summarized in Table \ref{tab:timing_results}. All experiments were
+    solved to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 3rd
+    order Runge-Kutta integrator. All results were run on a desktop computer with an AMD
+    Ryzen 2950x processor with 40 GB of RAM. Code for all experiments is available on
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
     {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
 
@@ -623,31 +638,28 @@ in attitude.
     \subsection{Airplane Barrel Roll}
 % \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
 
-        A 180 degree barrel roll trajectory for a fixed-wing airplane was optimized. The airplane's dynamics model consists of the a simple rigid body as defined in Section
-        \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag fit
-        from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do a
-        barrel roll by setting a high terminal cost for deviations from an upside-down attitude (see Fig.
-        \ref{fig:barrellroll}). The solver was initialized with level flight trim
+        A 180 degree barrel roll trajectory for a fixed-wing airplane was optimized. The
+        airplane's dynamics model consists of the a simple rigid body as defined in
+        Section \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag
+        fit from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do
+        a barrel roll by constraining the terminal state to upside-down (see Fig.
+        \ref{fig:barrellroll}). To avoid issues with the double-cover and integration error,
+        the following was used to enforce a terminal orientation to $\bar{q}$:
+        \begin{equation}
+            \frac{q_v}{\norm{q}} - \bar{q}_v
+                \sign\left(\bar{q}^T \frac{q }{ \norm{q}}\right) = 0
+        \end{equation}
+
+        The solver was initialized with level flight trim
         conditions. The convergence of the different versions of ALTRO is compared in
         Fig. \ref{fig:c_max_convergence}. As expected, the modified version achieves
         better convergence and faster solve times compared to the na\"ive version since
         the expansions being provided to the algorithm more accurately capture the
-        relationship between the attitude state and the goal and constraints.
-\todo{Brian: you mention constraints in the text and have it on the y-axis in Fig. 4, but you don't state what these constraints are in the text.}
+        relationship between the attitude state and the goal and constraints. For this 
+        relatively simple problem, we gained a modest 7\% improvement in runtime, despite
+        the additional matrix multiplications when calculating the cost and constraint
+        expansions.
 
-\todo{Brian: comment on the performance numbers in the text.}
-
-		% \todo{If we're not going to plot it and actually do an experimental comparison, I vote for leaving this stuff out.}
-        % We also compared the ``error quadratic'' cost function described in Section
-        % \ref{sec:error_quadratic} to the geodesic cost function in Section
-        % \ref{sec:geodesic}. The geodesic cost was more efficient, both in term of
-        % iterations and computation time, taking only 36 iterations and 1.8 ms/iteration
-        % vs 76 iterations and 7.6 ms/iteration for the error quadratic. Not only is the
-        % geodesic cost function much cheaper to compute, it also converges much faster
-        % than the error quadratic cost function. This could be due to the strong nonlinearities
-        % introduced when computing the quaternion error, making it more difficult to
-        % optimize.
-        
         \begin{figure}[ht]
             \centering
             \includegraphics[width=\columnwidth]{figures/barrellroll.png}
@@ -664,30 +676,34 @@ in attitude.
 
     \subsection{Quadrotor Flip}
         A 360 degree flip trajectory for a quadrotor was optimized with dynamics adapted
-        from \cite{mellinger2012trajectory}. Four
-        intermediary ``keyframes'' were used to encourage the quadrotor to reacj angles
-        of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around an approximately circular
-        arc. The quadrotor was constrained to stay above the floor and move to a goal
-        state 2 meters away in the $+y$ direction. The solver was initialized with a
-        dynamically infeasible trajectory that linearly interpolates between the initial
-        and final states, rotating the quadrotor around the x-axis a full \ang{360}.
-
-\todo{Brian: little more detail on cost weights. Any control cost? If we used the same cost function form for all of these (i.e. geodesic on q + quadratic on everything else), let's write it at the beginning of the experiment section.}
+        from \cite{mellinger2012trajectory}. To encourage the flip, we specified a 
+        ``waypoint'' cost function of the following form:
+        \begin{multline}
+                  \sum_{k \in \mathcal{N}} \ell(x_k, \hat{x}, \hat{Q}) 
+                + \sum_{k \in \mathcal{W}} \ell(x_k, \bar{x}_k, Q_w) 
+                + \half \sum_{k=1} u_k^T R u_k
+        \end{multline}
+        with $\mathcal{W} = \{45,51,55,75,101\}$, $\mathcal{N} = \{1:101\} \setminus
+        \mathcal{W}$. The four intermediary ``waypoints'' were used to encourage the
+        quadrotor to reach angles of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around
+        an approximately circular arc. The last waypoint was used to encourage the
+        quadrotor to move towards the final goal. The quadrotor was constrained to stay
+        above the floor and move to a goal state 2 meters away in the $+y$ direction. The
+        solver was provided a dynamically infeasible initial trajectory that linearly
+        interpolates between the initial and final states, rotating the quadrotor around
+        the x-axis a full \ang{360}.
 
 	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
-	    ALTRO. The original version of ALTRO, even after significant tuning efforts,
-	    was not able to converge to the desired solution.
-	    %It instead got halfway and then ``unwound'' 360 degrees and then continued rotating to the final orientation.
+	    ALTRO. The original version of ALTRO, even after significant tuning efforts, was
+        not able to converge to the desired solution. 
 	    This behavior is common and expected when attempting optimization that does not
 	    properly account for the group structure of rotations. It is also worth noting
 	    that this problem could not be solved using any three-parameter attitude
 	    representation, since it passes through the singularities at $90\degree,
-	    180\degree$, and $360\degree$ associated with Euler angles, Rodrigues parameters, and
-	    Modified Rodrigues Parameters, respectively.
-	    
-	    \todo{Brian: you say the original version didn't work at all, but there are timing results for it in the table???}
+	    180\degree$, and $360\degree$ associated with Euler angles, Rodrigues parameters,
+	    and Modified Rodrigues Parameters, respectively.
 
-        \begin{figure}[t]
+        \begin{figure}[ht]
             \centering
             \includegraphics[width=\columnwidth]{figures/quadflip.png}
             \caption{Snapshots of the quadrotor flip trajectory. The
@@ -712,7 +728,7 @@ in attitude.
         \end{equation}
         where $^Br_{cam}$ is the camera line-of-sight unit vector in the body frame and $^Wr_{sun}$ is the unit vector pointing to the sun in the world frame. The attitudes that satisfy this constraint comprise a non-convex set, with the
         constraint itself being nonlinear in $q$.
-        \begin{figure}[H]
+        \begin{figure}[ht]
             \centering
             \includegraphics{figures/kevins_plots/attitude_slew_plot.tikz}
             \caption{Visualization of the flexible spacecraft slew with a keep-out zone. Attitude is parameterized with a Rodrigues parameter to visualize the trajectory in three dimensions. The constraint surface represents attitudes where the camera line-of-sight is within 40$^\circ$ of the sun. The unconstrained solution violates this constraint, while the constrained solution is able to avoid the keep out zone.}
