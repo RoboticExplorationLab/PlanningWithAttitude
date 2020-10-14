@@ -411,6 +411,7 @@ in attitude.
               &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) G(q)\right).
     \end{align}
     Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
+
     \begin{equation}
     	\phi_k = ({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k).
     \end{equation}
@@ -456,7 +457,6 @@ in attitude.
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro} to
     solve trajectory optimization problems for rigid bodies, which extends easily to
     arbitrary systems whose state is in $\R^n \times SO(3)$. %ALTRO is an efficient solver for constrained nonlinear optimization problems that uses iterative LQR (iLQR) with an augmented Lagrangian framework.
-
     We consider trajectory optimization problems of the form,
     \begin{mini}[2]
         {x_{0:N},u_{0:N-1}}{\ell_f(x_N) + \sum_{k=0}^{N-1} \ell_k(x_k,u_k) }{}{}
@@ -471,7 +471,7 @@ in attitude.
     $N$ is the number of time steps, and $g_k$, $h_k$ are general nonlinear inequality and 
     equality constraints.
 
-    Like most gradient or Newton-based methods for optimization, ALTRO approximates the
+    ALTRO combines techniques from both differential dynamic programming (DDP) and direct transcription methods to achieve high performance on challenging constrained nonlinear trajectory optimization problems. Like most methods for nonlinear optimization, ALTRO iteratively approximates the
     nonlinear functions $f, \ell, g,$ and $h$ with their first or second-order Taylor
     series expansions. Leveraging the methods from Sec: \ref{sec:Quaternion_Calculus}, we
     adapt the algorithm to optimize directly on the error state $\delta x \in \R^{12}$:
@@ -524,7 +524,7 @@ in attitude.
     % with $c(x,u)$ being the concatenation of the constraints $f,g$, and $h$ at a given time step,
     % and $I_\mu$ the penalty matrix.
 	
-	With these results, we can apply standard Newton and quasi-Newton techniques along the lines of Section \ref{sec:Wahbas}. We can also calculate a second-order expansion of the ``action-value function'' $Q(x,u)$ needed in differential dynamic programming (DDP) and LQR-based methods,
+	With these results, we can apply standard Newton and quasi-Newton techniques along the lines of Section \ref{sec:Wahbas}. We can also calculate a second-order expansion of the ``action-value function'' $Q(x,u)$ needed in DDP and LQR-based methods,
     \begin{align}
         Q_{xx} &= \ell_{xx} + A_{k}^T P_{k+1} A_{k} \label{Qxx_exp}\\
         Q_{uu} &= \ell_{uu} + B_{k}^T P_{k+1} B_{k} \label{Quu_exp}\\
@@ -542,10 +542,8 @@ in attitude.
         u_k = \bar{u}_k - d_k - K_k \delta x_k.
     \end{equation}
     where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is
-    computed using \eqref{eq:state_error}, with $x_k$ being the current state estimate
-    and $\bar{x}_k$ the state from the previous iteration. 
-    For more details on the ALTRO algorithm, which leverages ideas from both DDP and
-    direct Newton methods, we refer the reader to~\cite{howell2019altro}.
+    computed using \eqref{eq:state_error}.%, with $x_k$ being the current state estimate and $\bar{x}_k$ the state from the previous iteration. 
+    For more details on the ALTRO algorithm, we refer the reader to~\cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
         In addition to the straight-forward modifications to the ALTRO algorithm itself, some care must be taken in designing cost functions that are well-suited to unit quaternions. We
@@ -686,7 +684,7 @@ in attitude.
         quadrotor to reach angles of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around
         an approximately circular arc. The last waypoint was used to encourage the
         quadrotor to move towards the final goal. The quadrotor was constrained to stay
-        above the floor and move to a goal state 2 meters away in the $+y$ direction. The
+        above the floor and move to a goal state two meters away in the $+y$ direction. The
         solver was provided a dynamically infeasible initial trajectory that linearly
         interpolates between the initial and final states, rotating the quadrotor around
         the x-axis a full \ang{360}.
@@ -779,12 +777,10 @@ in attitude.
     ``maximal'' coordinates that include the 3D orientation of each body \cite{brudigam2020linear}. 
 
 \section*{Acknowledgements}
-This material is based upon work supported by the National Science Foundation Graduate
+This work was supported by a NASA Early Career Faculty Award (Grant Number 80NSSC18K1503). This material is based upon work supported by the National Science Foundation Graduate
 Research Fellowship Program under Grant No. DGE-1656518. Any opinions, findings, and
 conclusions or recommendations expressed in this material are those of the author(s) and
-do not necessarily reflect the views of the National Science Foundation
-
-\todo{Add NASA acknowledgements (JPL + ECF)}
+do not necessarily reflect the views of the National Science Foundation.
 
 
 \printbibliography
