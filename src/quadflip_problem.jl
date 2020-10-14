@@ -133,7 +133,7 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
         show_summary=false,
         verbose_pn=false,
         verbose=0,
-        projected_newton=false
+        projected_newton=true
     )
     return prob, opts
 end

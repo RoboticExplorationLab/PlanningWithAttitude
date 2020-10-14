@@ -13,6 +13,7 @@ using StaticArrays
 using LinearAlgebra
 using MeshCat
 using Rotations
+using Colors
 
 ## Try ALTRO
 # prob = gen_quad_flip(UnitQuaternion, slack=false, vecmodel=false, renorm=true,
@@ -21,13 +22,14 @@ using Rotations
 prob,opts = QuadFlipProblem(UnitQuaternion, slack=false, vecmodel=false, renorm=true,
     costfun=QuatLQRCost
 )
-solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, show_summary=true)
+solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, show_summary=true, 
+    projected_newton=true)
 solve!(solver)
 
 ## Original Method
-prob2 = gen_quad_flip(UnitQuaternion, slack=false, vecmodel=true)
 prob2,opts = QuadFlipProblem(UnitQuaternion, slack=false, vecmodel=true)
-solver2 = ALTROSolver(prob2, opts, R_inf=1e-4, infeasible=true, show_summary=true)
+solver2 = ALTROSolver(prob2, opts, R_inf=1e-4, infeasible=true, show_summary=true,
+    projected_newton=true)
 solve!(solver2)
 
 ## Visualize
@@ -41,10 +43,6 @@ quad = Quadrotor()
 TrajOptPlots.set_mesh!(vis, quad)
 visualize!(vis, quad, get_trajectory(solver))
 visualize!(vis, quad, get_trajectory(solver2))
-
-## Plot y-z trajectory
-using Plots
-RobotDynamics.traj2(states(solver), xind=2, yind=3)
 
 ## Waypoints
 delete!(vis)

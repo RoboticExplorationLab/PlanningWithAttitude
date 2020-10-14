@@ -41,10 +41,10 @@ function TO.evaluate(con::QuatVecEq, x::StaticVector)
     if dq < 0
         qf *= -1
     end
-    return SA[qf[1] - q[1], qf[2] - q[2], qf[3] - q[3], qf[4] - q[4]] 
+    return -SA[qf[2] - q[2], qf[3] - q[3], qf[4] - q[4]] 
 end
 TO.sense(::QuatVecEq) = TO.Equality()
 TO.state_dim(con::QuatVecEq) = con.n
-Base.length(con::QuatVecEq) = 4
+Base.length(con::QuatVecEq) = 3
 
 

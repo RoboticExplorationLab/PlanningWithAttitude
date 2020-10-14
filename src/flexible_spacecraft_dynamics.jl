@@ -180,11 +180,11 @@ function SatelliteKeepOutProblem(constrained::Bool=true; vecstate::Bool=false, c
 	xf = SVector{17}([ω; qf;zeros(3);zeros(3);r0])
 
 	# Objective
-	Q = Diagonal(@SVector [10,10,10,100,100,100,100,10,10.0,10,10,10,10,0,0,0,0])
+	Q = Diagonal(@SVector [10,10,10, 1,1,1,1, 10,10.0,10, 10,10,10,1,1,1,1.])
 	R = Diagonal(@SVector fill(10.0, m))
 	Qf = Q * N
-	cost0 = costfun(Q, R, xf, w=10.)
-	cost_term = costfun(Qf, R, xf, w=100.)
+	cost0 = costfun(Q, R, xf, w=0.1)
+	cost_term = costfun(Qf, R, xf, w=1.0)
 	obj = Objective(cost0, cost_term, N)
 	# obj = LQRObjective(Q,R,Qf,xf,N)
 
@@ -216,7 +216,7 @@ function SatelliteKeepOutProblem(constrained::Bool=true; vecstate::Bool=false, c
 	opts = SolverOptions(
 		verbose=1,
 		constraint_tolerance = 1e-5,
-		penalty_scaling = 10.0,
+		penalty_scaling = 200.0,
 		penalty_initial = 1e3,
 		cost_tolerance = 1e-4,
 		cost_tolerance_intermediate = 1e-4,

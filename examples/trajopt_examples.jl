@@ -44,13 +44,14 @@ Barrell Roll
 args = (
     integration = RK3,
     termcon = :quatvec,
-    projected_newton = false,
+    # projected_newton = false,
     show_summary=true
 )
 
 ## Original Method
 prob,opts = YakProblems(vecstate=true, costfun=:Quadratic; args...) 
 solver = ALTROSolver(prob, opts)
+solve!(solver)
 add_result!(:barrellroll, false, solver)
 
 ## Modified Method
@@ -65,12 +66,12 @@ Quadrotor Flip
 """
 ## Original Method
 prob,opts = QuadFlipProblem(vecmodel=true)
-solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, show_summary=true)
+solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true)
 add_result!(:quadflip, false, solver)
 
 ## Modified Method
 prob,opts = QuadFlipProblem(vecmodel=false, renorm=true, costfun=QuatLQRCost)
-solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, show_summary=true)
+solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true)
 add_result!(:quadflip, true, solver)
 
 @save results_path results
@@ -107,6 +108,9 @@ org = df[.!df.errstate,:]
 tab = vcat(map(1:3) do i
     [mod.prob[i] @sprintf("%i / %i", org.iters[i], mod.iters[i]) @sprintf("%.2f / %.2f", org.time[i], mod.time[i])]
 end...)
+
+tab[2,2] = "— / $(mod.iters[2])"  # remove unsucessful quadrotor results
+tab[2,3] = "— / $(mod.time[2])"
 latex_tabular(joinpath(@__DIR__,"..","paper/figures/timing_results.tex"),
     Tabular("lll"),
     [
@@ -130,6 +134,7 @@ p = @pgf Axis(
         "ymode=log",
         xmajorgrids,
         ymajorgrids,
+        "legend style={at={(0.1,0.1)},anchor=south west}"
     },
     Plot(
         {
