@@ -412,14 +412,14 @@ in attitude.
               &= \left( \sum_i -2 H^T R(q)^T R({}^B \hat{v}_i) \right).
         \end{aligned}
     \end{equation}
-    Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
+    Given a guess solution, $q_k$, the standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
     \begin{equation}
     	\phi_k = ({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k).
     \end{equation}
 	The update is then applied using the composition for the group:
 	\begin{equation}
-		\q_{k+1} = \q_k \otimes \varphi(\phi_k)
-	\end{equation}.
+		\q_{k+1} = \q_k \otimes \varphi(\phi_k).
+	\end{equation}
 	This ``multiplicative'' Gauss-Newton method is summarized in Algorithm \ref{alg:mgn}.
 
     \begin{algorithm} 
@@ -439,10 +439,12 @@ in attitude.
 
 
     \subsection{Results}
-    Figure \ref{fig:wahba_convergence} compares the multiplicative Gauss-Newton method with a na\"ive Newton's method in which the quaternion is simply projected back onto the unit sphere at every iteration. That the na\"ive method makes progress
-    initially, but quickly stalls.
-    By correctly handling the group structure of unit quaternions, the multiplicative method is able
-    to maintain the fast convergence rates typical of Newton's method.
+    Figure \ref{fig:wahba_convergence} compares the multiplicative Gauss-Newton method
+    with a na\"ive Newton's method in which the quaternion is simply projected back onto
+    the unit sphere at every iteration. The na\"ive method makes progress initially, but
+    quickly stalls. By correctly handling the group structure of unit quaternions, the
+    multiplicative method is able to maintain the fast convergence rates typical of
+    Newton's method.
     \begin{figure}
 
         \centering
@@ -546,13 +548,13 @@ in attitude.
     where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is
     computed using \eqref{eq:state_error}, with $x_k$ being the current state estimate
     and $\bar{x}_k$ the state from the previous iteration. 
-    For more details on the ALTRO algorithm, which leverages ideas from both DDP and
-    direct Newton methods, we refer the reader to~\cite{howell2019altro}.
+    For more details on the ALTRO algorithm, which leverages ideas from both DDP
+    and direct Newton methods, we refer the reader to~\cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
         In addition to the straight-forward modifications to the ALTRO algorithm itself, some care must be taken in designing cost functions that are well-suited to unit quaternions. We
         frequently minimize costs that penalize distance from a goal state, e.g. $\half
-        (x-x_g)^T Q (x-x_g)$; However, na\"ive substraction of unit quaternions does not respect their group structure, and often results in undesired behavior. Instead, we have found the following cost function, which penalizes the geodesic
+        (x-x_g)^T Q (x-x_g)$; however, na\"ive substraction of unit quaternions does not respect their group structure, and often results in undesired behavior. Instead, we have found the following cost function, which penalizes the geodesic
         distance between two unit quaternions \cite{Kuffner2004}, to work well in practice:
         \begin{equation} \label{eq:quat_geodesic}
             J_\text{geo} = (1-\abs{q_g^T q}) .
@@ -607,23 +609,23 @@ in attitude.
     satellite with flexible solar panels that must slew to a new orientation while
     avoiding a keep-out zone.    
     All problems are run using ALTRO, first without any of the modifications presented in
-    the current paper, analagous to the naive Newton's method in section \ref{sec:Wahbas}
+    the current paper, analagous to the na\"ive Newton's method in section \ref{sec:Wahbas}
     and labeled ``naive'', and then using the modifications listed in Sec.
     \ref{sec:trajopt} and the geodesic cost function described in Sec.
-    \ref{sec:cost_functions}, labeled ``modified''. All cost functions were of the
+    \ref{sec:cost_functions}, labeled ``modified''. All cost functions are of the
     following form:
     \begin{align}
-        \ell_\text{naive}(x, \bar{x}, Q) &= \half (x - \bar{x})^T Q (x - \bar{x}) \\
-        \ell_\text{modified}(x, \bar{x}, Q) &= \half (x-\bar{x})^T \bar{Q} (x-\bar{x}) + w (1
-            \pm \bar{q}^T q)
+        \ell_\text{naive}(x, u, \bar{x}, Q, R) &= \half (x - \bar{x})^T Q (x - \bar{x}) + \half u^T R u \\
+        \ell_\text{modified}(x, u, \bar{x}, Q, R) 
+            &= \ell_\text{naive}(x, u, \bar{x}, \bar{Q}, R) + w (1 \pm \bar{q}^T q)
     \end{align}
     where $\bar{x}$ is the reference state and $\bar{Q} = \text{diag}(Q_r, \vec{0}_4,
     Q_v, Q_\omega)$, with $Q_r,Q_v,Q_\omega$ being the weights of $Q$ for position, and
     linear and angular velocity, respectively.
     
-    Timing results are summarized in Table \ref{tab:timing_results}. All experiments were
+    Timing results are summarized in Table \ref{tab:timing_results}. All experiments are 
     solved to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 3rd
-    order Runge-Kutta integrator. All results were run on a desktop computer with an AMD
+    order Runge-Kutta integrator. The results were run on a desktop computer with an AMD
     Ryzen 2950x processor with 40 GB of RAM. Code for all experiments is available on
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
     {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
@@ -642,9 +644,9 @@ in attitude.
         airplane's dynamics model consists of the a simple rigid body as defined in
         Section \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag
         fit from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do
-        a barrel roll by constraining the terminal state to upside-down (see Fig.
+        a barrel roll by constraining the terminal state to be upside-down (see Fig.
         \ref{fig:barrellroll}). To avoid issues with the double-cover and integration error,
-        the following was used to enforce a terminal orientation to $\bar{q}$:
+        the following was used to constrain a terminal orientation to $\bar{q}$:
         \begin{equation}
             \frac{q_v}{\norm{q}} - \bar{q}_v
                 \sign\left(\bar{q}^T \frac{q }{ \norm{q}}\right) = 0
@@ -660,14 +662,14 @@ in attitude.
         the additional matrix multiplications when calculating the cost and constraint
         expansions.
 
-        \begin{figure}[ht]
+        \begin{figure}[t]
             \centering
             \includegraphics[width=\columnwidth]{figures/barrellroll.png}
             \caption{Barrel roll trajectory computed by ALTRO using a terminal cost to encourage an upside-down attitude.}
             \label{fig:barrellroll}
         \end{figure}
 
-        \begin{figure}[ht]
+        \begin{figure}[t]
             \centering
             \includegraphics[height=4cm,width=\columnwidth]{figures/c_max_convergence.tikz}
             \caption{Constraint satisfaction as a function of iteration when solving the barrel roll problem using ALTRO both with and without the modifications for optimizing unit quaternions.}
@@ -679,12 +681,14 @@ in attitude.
         from \cite{mellinger2012trajectory}. To encourage the flip, we specified a 
         ``waypoint'' cost function of the following form:
         \begin{multline}
-                  \sum_{k \in \mathcal{N}} \ell(x_k, \hat{x}, \hat{Q}) 
-                + \sum_{k \in \mathcal{W}} \ell(x_k, \bar{x}_k, Q_w) 
-                + \half \sum_{k=1} u_k^T R u_k
+                  \sum_{k \in \mathcal{N}} \ell(x_k, u_k, \hat{x}, \hat{Q}, R) 
+                + \sum_{k \in \mathcal{W}} \ell(x_k, u_k, \bar{x}_k, Q_w, R) 
         \end{multline}
-        with $\mathcal{W} = \{45,51,55,75,101\}$, $\mathcal{N} = \{1:101\} \setminus
-        \mathcal{W}$. The four intermediary ``waypoints'' were used to encourage the
+        where $\hat{x}$, $\hat{Q}$ are the nominal state and state weight matrix, $Q_w$ is 
+        the weight matrix for the waypoints, and
+        $\mathcal{W} = \{45,51,55,75,101\}$, $\mathcal{N} = \{1:101\} \setminus
+        \mathcal{W}$.
+        Four intermediary ``waypoints'' were used to encourage the
         quadrotor to reach angles of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around
         an approximately circular arc. The last waypoint was used to encourage the
         quadrotor to move towards the final goal. The quadrotor was constrained to stay
@@ -711,7 +715,7 @@ in attitude.
                 red-colored quadrotors represent the state near t=5.0 s
             }
             \label{fig:quad_flip}
-        \end{figure}    
+        \end{figure}
 
     \subsection{Satellite Attitude Keep-Out}
         % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}
