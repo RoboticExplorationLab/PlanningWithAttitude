@@ -39,6 +39,7 @@
 	legend style={font=\footnotesize},
 }
 \usepackage{tikzscale}
+\usepgfplotslibrary{fillbetween}
 % \pgfplotsset{every axis plot post/.style={
 %     very thick,
 % }
@@ -67,6 +68,7 @@
 \newcommand{\toframe}[3]{\inframe{#1}{#3}^{#2}}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO: #1}}
+\newcommand{\added}[1]{\textcolor{blue}{#1}}
 
 
 \title{\LARGE \bf
@@ -183,7 +185,7 @@ involving significant changes in attitude.
         as a standard vector $q \in \R^4 := [q_s \;\; q_v^T]^T$ where $q_s \in \R$ and
         $q_v \in \R^3$ are referred to as the scalar and vector parts of the quaternion,
         respectively. The space of unit quaternions, $\Q = \{q : \norm{q}_2 = 1\}$, is a 
-        a double-cover of the rotation group $SO(3)$, since $q$ and $-q$ represent the same 
+        double-cover of the rotation group $SO(3)$, since $q$ and $-q$ represent the same 
         rotation \cite{markley2014fundamentals}.
         
         Quaternion multiplication is defined as
@@ -445,15 +447,22 @@ involving significant changes in attitude.
     the unit sphere at every iteration. The na\"ive method makes progress initially, but
     quickly stalls. By correctly handling the group structure of unit quaternions, the
     multiplicative method is able to maintain the fast convergence rates typical of
-    Newton's method.
+    Newton's method. \added{By comparing our method with the global solution obtained
+    from an SVD decomposition, we see that our method recovers the globally optimal
+    solution within a small number of iterations.}
     \begin{figure}
 
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
-        \caption{Convergence comparison for Wahba's problem. By modfying Newton's method
-        with the methods of section \ref{sec:Quaternion_Calculus}, quadratic convergence
-        rates are achieved, while a na\"ive approach stalls after only a few
-        iterations.}
+        \caption{Convergence comparison for Wahba's problem. \added{The error
+        is the angle between the current solution and the globally optimal
+        solution computed using SVD decomposition \todo{Kevin: add citation}.
+        The thick line is the average result of 100 trials with randomized
+        orientations and measurements. The thin lines are the maximum and
+        minimum over all 100 trials.} By modfying Newton's method with the
+        methods of section \ref{sec:Quaternion_Calculus}, quadratic
+        convergence rates are achieved, while a na\"ive approach stalls after
+        only a few iterations.}
         \label{fig:wahba_convergence}
     \end{figure}
 

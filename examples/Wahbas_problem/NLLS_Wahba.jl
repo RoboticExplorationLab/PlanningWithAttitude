@@ -1,6 +1,6 @@
 # activate the virtual environment
 # cd(dirname(@__FILE__))
-import Pkg; Pkg.activate(@__DIR__)
+import Pkg; Pkg.activate(@__DIR__); Pkg.instantiate()
 
 using ForwardDiff, LinearAlgebra, Statistics, JLD2
 # using MATLAB
@@ -350,7 +350,7 @@ function projected_newton_wahba()
 end
 
 ## run trials
-trials = 25
+trials = 100 
 max_iters = 21
 mn = zeros(trials,max_iters)
 pn = zeros(trials,max_iters)
@@ -431,6 +431,33 @@ p = @pgf Axis(
     ),
     Legend("naive", "modified")
 )
+# pgfsave("paper/figures/wahba_convergence.tikz", p, include_preamble=false)
+m_max = maximum(mn, dims=1)
+m_min = minimum(mn, dims=1)
+p_max = maximum(pn, dims=1)
+p_min = minimum(pn, dims=1)
+
+p = @pgf Axis(
+    {
+        xlabel="iterations",
+        ylabel="angle error (degrees)",
+        "ymode=log",
+        xmajorgrids,
+        ymajorgrids,
+        "no markers",
+        "legend style={at={(0.1,0.1)},anchor=south west}"
+    },
+    PlotInc({"orange, ultra thick"}, Coordinates(1:5, p_average)),
+    PlotInc({"orange, name path=A, line width=0.1pt, forget plot"}, Coordinates(1:5, p_max[1:5])),
+    PlotInc({"orange, name path=B, line width=0.1pt, forget plot"}, Coordinates(1:5, p_min[1:5])),
+    PlotInc({"orange!10, forget_plot"}, "fill between [of=A and B];"),
+    PlotInc({"cyan, ultra thick"}, Coordinates(1:5, m_average)),
+    PlotInc({"cyan, solid, name path=C, line width=0.1pt, forget plot"}, Coordinates(1:5, m_max[1:5])),
+    PlotInc({"cyan, solid, name path=D, line width=0.1pt, forget plot"}, Coordinates(1:5, m_min[1:5])),
+    PlotInc({"cyan!10, forget plot"}, "fill between [of=C and D];"),
+    Legend("naive", "modified")
+)
+print_tex(p)
 pgfsave("paper/figures/wahba_convergence.tikz", p, include_preamble=false)
 
 mat"
