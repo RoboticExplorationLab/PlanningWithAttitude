@@ -1,4 +1,4 @@
-using TrajectoryOptimization: LieLQRCost
+# using TrajectoryOptimization: LieLQRCost
 using ForwardDiff
 using RobotDynamics
 
@@ -10,6 +10,7 @@ function YakProblems(;
         costfun=:Quadratic, 
         termcon=:goal,
         quatnorm=:none,
+        heading=0.0,  # deg
         kwargs...
     )
     model = RobotZoo.YakPlane(UnitQuaternion)
@@ -36,10 +37,12 @@ function YakProblems(;
         # Initial and final condition
         p0 = MRP(0.997156, 0., 0.075366) # initial orientation
         pf = MRP(0., -0.0366076, 0.) # final orientation (upside down)
+        dq = expm(SA[0,0,1]*deg2rad(heading))
+        pf = pf * dq
 
         x0 = RD.build_state(model, [-3,0,1.5], p0, [5,0,0], [0,0,0])
         utrim  = @SVector  [41.6666, 106, 74.6519, 106]
-        xf = RD.build_state(model, [3,0,1.5], pf, [5,0,0], [0,0,0])
+        xf = RD.build_state(model, [3,0,1.5], pf, dq * [5,0,0.], [0,0,0])
 
         # Xref trajectory
         x̄0 = RBState(model, x0)
@@ -70,7 +73,6 @@ function YakProblems(;
             costfuns = map(Xref) do xref
                 QuatLQRCost(Q, R, xf, utrim, w=0.1)
             end
-            costfun = QuatLQRCost(Q, R, xf, utrim; w=0.1)
             costterm = QuatLQRCost(Qf, R, xf, utrim; w=200.0)
             costfuns[end] = costterm
         elseif costfun == :LieLQR

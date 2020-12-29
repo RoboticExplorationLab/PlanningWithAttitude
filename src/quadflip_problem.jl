@@ -20,9 +20,10 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
     x0 = RobotDynamics.build_state(model, x0_pos, UnitQuaternion(I), zeros(3), zeros(3))
 
     # cost
+    s = costfun == LQRCost
     Q_diag = RobotDynamics.build_state(model, 
-        [1e-2,1e-2,5e-2], 
-        fill(1e-5,rsize), 
+        [1e-6,1e-6,1e-6], 
+        fill(1e-5,rsize)*s, 
         fill(1e-3,3), 
         fill(1e-2,3)
     )
@@ -34,17 +35,18 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
     # waypoints
     ex = @SVector [1.0, 0, 0]
     wpts = [
-        ((@SVector [0, 0.5, 1.5,]),   expm(ex*deg2rad(90))),
+        ((@SVector [0, 1.0, 1.0,]),   expm(ex*deg2rad(00))),
+        ((@SVector [0, 1.5, 1.5,]),   expm(ex*deg2rad(90))),
         # ((@SVector [0, 0.2, 1.5]),    expm(ex*deg2rad(90))),
         # ((@SVector [0, 0.0, 2.0]),    expm(ex*deg2rad(135))),
-        ((@SVector [0, 0.0, 2.5]),    expm(ex*deg2rad(180))),
+        ((@SVector [0, 1.0, 2.5]),    expm(ex*deg2rad(180))),
         # ((@SVector [0, 0.0, 2.0]),    expm(ex*deg2rad(225))),
-        ((@SVector [0,-0.5, 1.5]),    expm(ex*deg2rad(-90))),
+        ((@SVector [0, 0.5, 1.5]),    expm(ex*deg2rad(270))),
         ((@SVector [0, 0.65, 1.0]),    expm(ex*deg2rad(360))),
         ((@SVector [0, 1.0, 1.0]),    expm(ex*deg2rad(360))),
     ]
     # times = [35, 41, 47, 51, 55, 61, 70, 101]
-    times = [45, 51, 55, 75, 101]
+    times = [20, 45, 51, 55, 75, 101]
 
     """
     Costs
@@ -52,12 +54,12 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
     # intermediate costs
     Qw_diag = RobotDynamics.build_state(model, 
         [1e3,1e1,1e3], 
-        (@SVector fill(5e4,rsize)), 
+        (@SVector fill(5e4,rsize))*s, 
         fill(1,3), fill(10,3) 
     )
-    Qf_diag = RobotDynamics.fill_state(model, 10., 100, 10, 10)
+    Qf_diag = RobotDynamics.fill_state(model, 10., 100*s, 10, 10)
     xf = RobotDynamics.build_state(model, wpts[end][1], wpts[end][2], zeros(3), zeros(3))
-    cost_nom = costfun(Diagonal(Q_diag), R, xf, w=0.02)
+    cost_nom = costfun(Diagonal(Q_diag), R, xf, w=0.10)
 
     # waypoint costs
     costs = map(1:length(wpts)) do i
@@ -65,12 +67,12 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
         xg = RobotDynamics.build_state(model, r, q, v_nom, [2pi/3, 0, 0])
         if times[i] == N
             Q = Diagonal(Qf_diag)
-            w = 10.
+            w = 100.
         else
             Q = Diagonal(1e-3*Qw_diag)
-            w = 100.
+            w = 10.
         end
-        costfun(Q, R, xg, w=1.0)
+        costfun(Q, R, xg, w=w)
     end
 
     costs_all = map(1:N) do k
@@ -85,11 +87,11 @@ function QuadFlipProblem(Rot=UnitQuaternion; slack::Bool=false, vecmodel::Bool=f
 
     # Constraints
     conSet = ConstraintList(n,m,N)
-    add_constraint!(conSet, GoalConstraint(xf, SA[1,2,3,8,9,10]), N:N)
+    # add_constraint!(conSet, GoalConstraint(xf, SA[1,2,3,8,9,10]), N:N)
     xmin = fill(-Inf,n)
     xmin[3] = 0.0
     bnd = BoundConstraint(n,m, x_min=xmin)
-    add_constraint!(conSet, bnd, 1:N-1)
+    # add_constraint!(conSet, bnd, 1:N-1)
 
     if slack
         quad = QuatSlackModel(model)
