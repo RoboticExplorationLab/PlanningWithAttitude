@@ -316,7 +316,7 @@ involving significant changes in attitude.
         both the composition rule and the nonlinear mapping between the space of unit
         quaternions and our chosen three-parameter error representation.
 
-        Let $\phi \in \R^3$ be a differential rotation \added{from the group identity to the 
+        Let $\phi \in \R^3$ be a differential rotation \added{applied to the 
         input of a vector-valued function of a quaternion} 
         $y = h(q): \Q \to \R^p$, such that
         \begin{equation} \label{eq:vector_function}
@@ -449,7 +449,7 @@ involving significant changes in attitude.
     stalls. By correctly handling the group structure of unit quaternions,
     the multiplicative method is able to maintain the fast convergence rates
     typical of Newton's method. \added{By comparing our method with the
-    global solution obtained from an SVD decomposition
+    global solution obtained from a singular-value decomposition
     \cite{markley1999estimate}, we see that our method recovers the globally
     optimal solution within a small number of iterations.} 
     
@@ -458,7 +458,7 @@ involving significant changes in attitude.
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
         \caption{Convergence comparison for Wahba's problem. \added{The error
         is the angle between the current solution and the globally optimal
-        solution computed using SVD decomposition.
+        solution computed using a singular-value decomposition.
         The thick line is the average result of 100 trials with randomized
         orientations and measurements. The thin lines are the maximum and
         minimum over all 100 trials.} By modfying Newton's method with the
