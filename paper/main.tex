@@ -248,7 +248,7 @@ involving significant changes in attitude.
         For clarity, we will restrict our attention to rigid bodies moving freely in 3D 
         space. That is, we consider systems with dynamics of the following form:
         \begin{equation} \label{eq:rigid_body_dynamics}
-            x = \begin{bmatrix} r \\ R \\ v \\ \omega \end{bmatrix}, \quad 
+            x = \begin{bmatrix} r \\ q \\ v \\ \omega \end{bmatrix}, \quad 
             \dot{x} = \begin{bmatrix} 
                 v \\ 
                 \half \q \otimes \hat{\omega} = \half L(q) H \omega \\ 
@@ -316,8 +316,9 @@ involving significant changes in attitude.
         both the composition rule and the nonlinear mapping between the space of unit
         quaternions and our chosen three-parameter error representation.
 
-        Let $\phi \in \R^3$ be a differential rotation applied to a function with
-        quaternion inputs $y = h(q): \Q \to \R^p$, such that
+        Let $\phi \in \R^3$ be a differential rotation \added{from the group identity to the 
+        input of a vector-valued function of a quaternion} 
+        $y = h(q): \Q \to \R^p$, such that
         \begin{equation} \label{eq:vector_function}
             y + \delta y = h(L(q) \varphi(\phi)) \approx h(q) +  \nabla h(q) \phi.
         \end{equation}
@@ -441,22 +442,23 @@ involving significant changes in attitude.
 
 
 
-    \subsection{Results}
-    Figure \ref{fig:wahba_convergence} compares the multiplicative Gauss-Newton method
-    with a na\"ive Newton's method in which the quaternion is simply projected back onto
-    the unit sphere at every iteration. The na\"ive method makes progress initially, but
-    quickly stalls. By correctly handling the group structure of unit quaternions, the
-    multiplicative method is able to maintain the fast convergence rates typical of
-    Newton's method. \added{By comparing our method with the global solution obtained
-    from an SVD decomposition, we see that our method recovers the globally optimal
-    solution within a small number of iterations.}
+    \subsection{Results} Figure \ref{fig:wahba_convergence} compares the
+    multiplicative Gauss-Newton method with a na\"ive Newton's method in
+    which the quaternion is simply projected back onto the unit sphere at
+    every iteration. The na\"ive method makes progress initially, but quickly
+    stalls. By correctly handling the group structure of unit quaternions,
+    the multiplicative method is able to maintain the fast convergence rates
+    typical of Newton's method. \added{By comparing our method with the
+    global solution obtained from an SVD decomposition
+    \cite{markley1999estimate}, we see that our method recovers the globally
+    optimal solution within a small number of iterations.} 
+    
     \begin{figure}
-
         \centering
         \includegraphics[width=\columnwidth, height=5cm]{figures/wahba_convergence.tikz}
         \caption{Convergence comparison for Wahba's problem. \added{The error
         is the angle between the current solution and the globally optimal
-        solution computed using SVD decomposition \todo{Kevin: add citation}.
+        solution computed using SVD decomposition.
         The thick line is the average result of 100 trials with randomized
         orientations and measurements. The thin lines are the maximum and
         minimum over all 100 trials.} By modfying Newton's method with the
@@ -466,13 +468,13 @@ involving significant changes in attitude.
         \label{fig:wahba_convergence}
     \end{figure}
 
-\section{Trajectory Optimization on $\R^n \times SO(3)$} \label{sec:trajopt}
+\section{Trajectory Optimization \added{for Rigid Bodies}} \label{sec:trajopt}
     Here we outline the modifications to the ALTRO solver \cite{howell2019altro} to
     solve trajectory optimization problems for rigid bodies, which extends easily to
-    arbitrary systems whose state is in $\R^n \times SO(3)$. %ALTRO is an efficient solver for constrained nonlinear optimization problems that uses iterative LQR (iLQR) with an augmented Lagrangian framework.
+    arbitrary systems whose state is in $\R^n \times \added{\Q}$. %ALTRO is an efficient solver for constrained nonlinear optimization problems that uses iterative LQR (iLQR) with an augmented Lagrangian framework.
     We consider trajectory optimization problems of the form,
     \begin{mini}[2]
-        {x_{0:N},u_{0:N-1}}{\ell_f(x_N) + \sum_{k=0}^{N-1} \ell_k(x_k,u_k) }{}{}
+        {x_{1:N},u_{1:N-1}}{\ell_f(x_N) + \sum_{k=1}^{N-1} \ell_k(x_k,u_k) }{}{}
         \addConstraint{x_{k+1} = f(x_k,u_k)}
         \addConstraint{g_k(x_k,u_k)}{\leq 0}
         \addConstraint{h_k(x_k,u_k)}{=0}
@@ -491,7 +493,7 @@ involving significant changes in attitude.
     \begin{equation} \label{eq:state_error}
     	\delta x_k = \begin{bmatrix} 
             r_k - \bar{r}_k \\ \varphi^{-1}(\bar{\q}_k^{-1} \otimes \q_k) \\ v_k - \bar{v}_k \\ \omega_k - \bar{\omega}_k 
-        \end{bmatrix} .
+        \end{bmatrix}.
     \end{equation}
 
     We begin by linearizing the dynamics about the reference state and input trajectories, $\bar{x}$ and $\bar{u}$, using
@@ -555,7 +557,7 @@ involving significant changes in attitude.
         u_k = \bar{u}_k - d_k - K_k \delta x_k.
     \end{equation}
     where $\bar{u}_k$ is the control value from the previous iteration, and $\delta x$ is
-    computed using \eqref{eq:state_error}.%, with $x_k$ being the current state estimate and $\bar{x}_k$ the state from the previous iteration. 
+    computed using \eqref{eq:state_error}. %, with $x_k$ being the current state estimate and $\bar{x}_k$ the state from the previous iteration. 
     For more details on the ALTRO algorithm, we refer the reader to~\cite{howell2019altro}.
 
     \subsection{Quaternion Cost Functions} \label{sec:cost_functions}
@@ -571,7 +573,9 @@ involving significant changes in attitude.
             \nabla J_\text{geo} &= \sign(q_d^T q) q_g^T G(q) \\
             \nabla^2 J_\text{geo} &= \sign(q_d^T q) I_3 q_g^T q ,
         \end{align}
-        where $\sign$ denotes the signum function.
+        where $\sign$ denotes the signum function. \added{This cost function is particularly
+        useful for rotations since it eliminates the ambiguity arising from the quaternion 
+        double-cover of $SO(3)$.}
         
         % \subsubsection{Error Quadratic} \label{sec:error_quadratic}
         %     Rather than simple subtraction, we can use a quadratic function on the
@@ -632,28 +636,30 @@ involving significant changes in attitude.
     
     Timing results are summarized in Table \ref{tab:timing_results}. All experiments are 
     solved to a constraint satisfaction tolerance of $10^{-5}$ and discretized with a 4th 
-    order Runge-Kutta integrator. The results were run on a desktop computer with an AMD
-    Ryzen 2950x processor with 40 GB of RAM. Code for all experiments is available on
+    order Runge-Kutta integrator. The results were run on a laptop computer with a 2.8 GHz 
+    i7-1165G7 processor with 16 GB of RAM. Code for all experiments is available on
     \href{https://github.com/RoboticExplorationLab/PlanningWithAttitude}
     {GitHub\footnote{\url{https://github.com/RoboticExplorationLab/PlanningWithAttitude}}}.
 
     \begin{table}
         \centering
+        \caption{Trajectory Optimization Timing Results (naive/modified)}
         \input{figures/timing_results.tex}
         \label{tab:timing_results}
-        \caption{Trajectory Optimization Timing Results (naive/modified)}
     \end{table}
         
     \subsection{Airplane Barrel Roll}
 % \todo{Reference \eqref{eq:rigid_body_dynamics} and then say that the forces and torques due to lift and drag are fit from wind tunnel data. Also, cite that paper.}
 
-        A 180 degree barrel roll trajectory for a fixed-wing airplane was optimized. The
-        airplane's dynamics model consists of the a simple rigid body as defined in
-        Section \ref{sec:rigidbody_dynamics} with forces and torques due to lift and drag
-        fit from wind tunnel data \cite{manchester2016udp}. The airplane was tasked to do
-        a barrel roll by constraining the terminal state to upside-down (see Fig.
-        \ref{fig:barrellroll}). To mitigate issues with integration error and drift in the magnitude of the quaternion,
-        the following constraint function was used to enforce a terminal orientation of $\bar{q}$:
+        A 180 degree barrel roll trajectory for a fixed-wing airplane was
+        optimized. The airplane's dynamics model consists of the a simple
+        rigid body as defined in Section \ref{sec:rigidbody_dynamics} with
+        forces and torques due to lift and drag fit from wind tunnel data
+        \cite{manchester2016udp}. The airplane was tasked to do a barrel roll
+        by constraining the terminal state to upside-down (see Fig.
+        \ref{fig:barrellroll}). To mitigate issues with integration error and
+        drift in the magnitude of the quaternion, the following constraint
+        function was used to enforce a terminal orientation of $\bar{q}$:
         \begin{equation}
             \frac{q_v}{\norm{q}} - \bar{q}_v
                 \sign\left(\bar{q}^T \frac{q }{ \norm{q}}\right) = 0
@@ -665,7 +671,7 @@ involving significant changes in attitude.
         better convergence and faster solve times compared to the na\"ive version since
         the expansions being provided to the algorithm more accurately capture the
         relationship between the attitude state and the goal and constraints. For this 
-        relatively simple problem, we gained a modest 11\% improvement in runtime, despite
+        relatively simple problem, we gained a modest 31\% improvement in runtime, despite
         the additional matrix multiplications when calculating the cost and constraint
         expansions.
 
@@ -693,26 +699,30 @@ involving significant changes in attitude.
         \end{multline}
         where $\hat{x}$, $\hat{Q}$ are the nominal state and state weight matrix, $Q_w$ is 
         the weight matrix for the waypoints, and
-        $\mathcal{W} = \{45,51,55,75,101\}$, $\mathcal{N} = \{1:101\} \setminus
+        $\mathcal{W} = \{20,45,51,55,75,101\}$, $\mathcal{N} = \{1:101\} \setminus
         \mathcal{W}$.
-        Four intermediary ``waypoints'' were used to encourage the
-        quadrotor to reach angles of \ang{90}, \ang{180}, \ang{270}, and \ang{360} around
-        an approximately circular arc. The last waypoint was used to encourage the
-        quadrotor to move towards the final goal. The quadrotor was constrained to stay
-        above the floor and move to a goal state two meters away in the $+y$ direction. The
-        solver was provided a dynamically infeasible initial trajectory that linearly
-        interpolates between the initial and final states, rotating the quadrotor around
-        the x-axis a full \ang{360}.
+        Four intermediary ``waypoints'' were used to encourage the quadrotor
+        to reach angles of \ang{90}, \ang{180}, \ang{270}, and \ang{360}
+        around an approximately circular arc. The last waypoint was used to
+        encourage the quadrotor to move towards the final goal, and the first
+        kept it above the floor before starting the loop. The solver was
+        provided a dynamically infeasible initial trajectory that linearly
+        interpolates between the initial and final states, rotating the
+        quadrotor around the x-axis a full \ang{360}.
 
-	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as generated using
-	    ALTRO. The original version of ALTRO, even after significant tuning efforts, was
-        not able to converge to the desired solution. 
-	    This behavior is common and expected when attempting optimization that does not
-	    properly account for the group structure of rotations. It is also worth noting
-	    that this problem could not be solved using any three-parameter attitude
-	    representation, since it passes through the singularities at $90\degree,
-	    180\degree$, and $360\degree$ associated with Euler angles, Rodrigues parameters,
-	    and Modified Rodrigues Parameters, respectively.
+	    Figure \ref{fig:quad_flip} shows snapshots of the trajectory as
+	    generated using ALTRO. \added{To compare the convergence properties of the
+	    two methods, the optimal state and control trajectories were
+	    perturbed with random Gaussian white noise with a mean of 1 for
+	    position, linear velocity, and angular velocity, 0.1 for the
+        controls, and 145 degrees for the orientation (about a random axis). 
+        As shown in Fig. \ref{fig:flip_success}, the modified method converges
+        more reliably than the na\"ive method.}
+	    It is also worth noting that this problem could not be solved using
+	    any three-parameter attitude representation, since it passes through
+	    the singularities at $90\degree, 180\degree$, and $360\degree$
+	    associated with Euler angles, Rodrigues parameters, and Modified
+	    Rodrigues Parameters, respectively.
 
         \begin{figure}[t]
             \centering
@@ -723,6 +733,34 @@ involving significant changes in attitude.
             }
             \label{fig:quad_flip}
         \end{figure}
+
+        \begin{figure}
+            \centering    
+            \begin{tikzpicture}
+                \begin{axis}[
+                    ybar,
+                    width=\columnwidth, 
+                    height=5cm, 
+                    enlarge x limits=0.5,
+                    enlarge y limits=0.2,
+                    ylabel={Percent Success},
+                    xtick={1,2},
+                    xticklabels={Na\"ive, Modified},
+                    bar width=0.6,
+                    nodes near coords,
+                    bar shift=0pt,
+                    axis on top
+                ]
+                \addplot [orange, fill] coordinates {(1,86)};
+                \addplot [cyan, fill]   coordinates {(2,97)};
+                \end{axis}
+            \end{tikzpicture}
+            \caption{Convergence comparison for quadrotor flip. Percent of 100 trials 
+            that successfully converged, where each trial is initialized with locally-optimal
+            trajectories perturbed with significant Gaussian white noise.}
+            \label{fig:flip_success}
+        \end{figure}
+
 
     \subsection{Satellite Attitude Keep-Out}
         % \todo{Let's add a little more detail here: How about saying the dynamics are \eqref{eq:rigid_body_dynamics} plus a few extra states to capture the bending modes. Also, let's just call the start tracker a camera or sensor.}

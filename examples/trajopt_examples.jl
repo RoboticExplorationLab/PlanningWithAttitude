@@ -64,13 +64,13 @@ add_result!(:barrellroll, true, solver)
 Quadrotor Flip
 """
 ## Original Method
-prob,opts = QuadFlipProblem(vecmodel=true)
-solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true)
+prob,opts = QuadFlipProblem(vecmodel=true, renorm=true; args...)
+solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, static_bp=false)
 add_result!(:quadflip, false, solver)
 
 ## Modified Method
 prob,opts = QuadFlipProblem(vecmodel=false, renorm=true, costfun=QuatLQRCost; args...)
-solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true)
+solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, static_bp=false)
 add_result!(:quadflip, true, solver)
 
 @save results_path results
@@ -101,15 +101,14 @@ df = DataFrame(results)
 df.time .= round.(df.time, digits=2)
 df.prob = String.(df.problem)
 
-
 mod = df[df.errstate,:]
 org = df[.!df.errstate,:]
 tab = vcat(map(1:3) do i
     [mod.prob[i] @sprintf("%i / %i", org.iters[i], mod.iters[i]) @sprintf("%.2f / %.2f", org.time[i], mod.time[i])]
 end...)
 
-tab[2,2] = "— / $(mod.iters[2])"  # remove unsucessful quadrotor results
-tab[2,3] = "— / $(mod.time[2])"
+# tab[2,2] = "— / $(mod.iters[2])"  # remove unsucessful quadrotor results
+# tab[2,3] = "— / $(mod.time[2])"
 latex_tabular(joinpath(@__DIR__,"..","paper/figures/timing_results.tex"),
     Tabular("lll"),
     [
@@ -154,3 +153,30 @@ p = @pgf Axis(
     Legend("naive","modified")
 )
 pgfsave(joinpath(@__DIR__, "..", "paper/figures/c_max_convergence.tikz"), p, include_preamble=false)
+
+
+## Generate visualizations
+using TrajOptPlots, MeshCat, Colors
+vis = Visualizer()
+open(vis)
+
+# Barrell Roll
+prob,opts = YakProblems(vecstate=false, costfun=:QuatLQR; args...) 
+solver = ALTROSolver(prob, opts, show_summary=true)
+solve!(solver)
+
+TrajOptPlots.set_mesh!(vis, prob.model)
+visualize!(vis, solver)
+TrajOptPlots.waypoints!(vis, solver, length=11)
+
+# Quadrotor Flip
+prob,opts = QuadFlipProblem(vecmodel=false, renorm=true, costfun=QuatLQRCost; args...)
+solver = ALTROSolver(prob, opts, R_inf=1e-4, infeasible=true, static_bp=false)
+solve!(solver)
+
+delete!(vis)
+TrajOptPlots.set_mesh!(vis, prob.model.model)
+visualize!(vis, prob.model.model, get_trajectory(solver))
+TrajOptPlots.waypoints!(vis, prob.model.model, get_trajectory(solver), 
+    inds=[1,15,20,25,30,32,35,40,42,44,46,48,50,52,54,56,58,60,62,65,68,70,75,80,95,100],
+    color=HSL(colorant"green"), color_end=HSL(colorant"red"))
