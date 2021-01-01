@@ -261,7 +261,7 @@ involving significant changes in attitude.
         $\omega \in \R^3$ is the angular velocity. $m \in \R$ is the mass, $J \in
         \R^{3\times3}$ is the inertia matrix, $\inframe{W}{F(x,u)} \in \R^3$ are the
         forces in the world frame, and $\inframe{B}{\tau(x,u)}$ are the moments in the
-        body frame.
+        body frame. \added{We use the convention that ``attitude'' always refers to a rotation from body to world frame.}
 
 \section{Quaternion Differential Calculus} \label{sec:Quaternion_Calculus}
     We now present a simple but powerful method for taking derivatives of functions 
@@ -316,13 +316,13 @@ involving significant changes in attitude.
         both the composition rule and the nonlinear mapping between the space of unit
         quaternions and our chosen three-parameter error representation.
 
-        Let $\phi \in \R^3$ be a differential rotation \added{applied to a function with
-        quaternion inputs} 
+        Let $\phi \in \R^3$ be a differential rotation applied to a function with
+        quaternion inputs 
         $y = h(q): \Q \to \R^p$, such that
         \begin{equation} \label{eq:vector_function}
             y + \delta y = h(L(q) \varphi(\phi)) \approx h(q) +  \nabla h(q) \phi.
         \end{equation}
-        We can calculate the Jacobian $\nabla h(q) \in \R^{p \times 3}$ by
+        \added{Note that we chose to represent $\phi$ in the body frame, consistent with the standard definition of angular velocity, and therefore it is applied to $q$ through right (rather than left) multiplication.} We can calculate the Jacobian $\nabla h(q) \in \R^{p \times 3}$ by
         differentiating \eqref{eq:vector_function} with respect to $\phi$, evaluated at
         $\phi = 0$:
         \begin{equation} \label{eq:quat_gradient}
