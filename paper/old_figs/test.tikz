@@ -1,0 +1,65 @@
+\begin{tikzpicture}
+\begin{axis}[xlabel={iterations}, ylabel={angle error (degrees)}, ymode=log, xmajorgrids, ymajorgrids, no markers, legend style={at={(0.1,0.1)},anchor=south west}]
+    \addplot+[orange, ultra thick]
+        coordinates {
+            (1,10.0)
+            (2,0.7678964995250577)
+            (3,0.374300025506541)
+            (4,0.3679627299910924)
+            (5,0.3676273603961281)
+        }
+        ;
+    \addplot+[orange, name path=A, line width=0.1pt, forget plot]
+        coordinates {
+            (1,10.000000000000005)
+            (2,4.757112743094829)
+            (3,3.2022627472300087)
+            (4,3.07296845752766)
+            (5,3.067476045883991)
+        }
+        ;
+    \addplot+[orange, name path=B, line width=0.1pt, forget plot]
+        coordinates {
+            (1,9.999999999999986)
+            (2,0.06380635255648336)
+            (3,0.012967313656774965)
+            (4,0.011255533610576535)
+            (5,0.011122997621299442)
+        }
+        ;
+    \addplot+[orange!10, forget plot]
+        fill between [of=A and B];
+        ;
+    \addplot+[cyan, ultra thick]
+        coordinates {
+            (1,10.0)
+            (2,0.22639110461932632)
+            (3,0.005209560034624235)
+            (4,0.00015265929399267558)
+            (5,4.93408997953017e-6)
+        }
+        ;
+    \addplot+[cyan, solid, name path=C, line width=0.1pt, forget plot]
+        coordinates {
+            (1,10.000000000000012)
+            (2,0.48612090632693833)
+            (3,0.020255571615923933)
+            (4,0.0009392553213255653)
+            (5,4.283368523841055e-5)
+        }
+        ;
+    \addplot+[cyan, solid, name path=D, line width=0.1pt, forget plot]
+        coordinates {
+            (1,9.999999999999988)
+            (2,0.022877727290891384)
+            (3,0.0005243109598923958)
+            (4,2.4896868070253027e-6)
+            (5,1.350442822177038e-8)
+        }
+        ;
+    \addplot+[cyan!10, forget plot]
+        fill between [of=C and D];
+        ;
+    \legend{{naive},{modified}}
+\end{axis}
+\end{tikzpicture}
