@@ -1,9 +1,9 @@
-
-\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
-\IEEEoverridecommandlockouts                              % This command is only needed if 
+% \documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+\documentclass[letterpaper, 10 pt, journal, twoside]{ieeetran}
+% \IEEEoverridecommandlockouts                              % This command is only needed if 
                                                           % you want to use the \thanks command
-\overrideIEEEmargins                                      % Needed to meet printer requirements.
-\usepackage[top=60pt, left=48pt, right=48pt, bottom=43pt]{geometry}
+% \overrideIEEEmargins                                      % Needed to meet printer requirements.
+% \usepackage[top=60pt, left=48pt, right=48pt, bottom=43pt]{geometry}
 
 
 % Bibliography
@@ -68,20 +68,26 @@
 \newcommand{\toframe}[3]{\inframe{#1}{#3}^{#2}}
 
 \newcommand{\todo}[1]{\textcolor{red}{TODO: #1}}
-\newcommand{\added}[1]{\textcolor{blue}{#1}}
+\newcommand{\added}[1]{\textcolor{black}{#1}}
 
+% Header, Title, etc.
+\markboth{IEEE Robotics and Automation Letters. Preprint Version. Accepted Dec, 2020}
+{Jackson \MakeLowercase{et al.}: Planning with Attitude}
 
 \title{\LARGE \bf
 Planning with Attitude
 }
 
-\author{Brian E. Jackson$^1$, Kevin Tracy$^1$, and Zachary Manchester$^1$%
-    \thanks{
-        $^1$Robotics Institute, 
-        Carnegie Mellon University, 
-        5000 Forbes Ave, Pittsburgh, PA, USA
-    }
+% Make room for more info lines in the \author command 
+\author{Brian E Jackson$^{1}$, Kevin Tracy$^{1}$, and Zachary Manchester$^{1}$%
+\thanks{Manuscript received: October, 15, 2020; Revised January 2, 2021; Accepted January 4, 2021.}%Use only for final RAL version
+\thanks{This paper was recommended for publication by Editor Nancy Amato upon evaluation of the Associate Editor and Reviewers' comments.
+This work was supported by a NASA Early Career Faculty Award, NASA JPL, and NSF GFRP Grant No. DGE-1656518.} %Use only for final RAL version
+\thanks{$^{1}$All authors are with the Robotics Institute, Carnegie Mellon University, Pittsburgh, PA, USA 
+        {\tt\footnotesize brian.jackson@cmu.edu}}%
+\thanks{Digital Object Identifier (DOI): see top of this page.}
 }
+
 
 \begin{document}
 \maketitle
@@ -100,9 +106,13 @@ involving significant changes in attitude.
 
 \end{abstract}
 
+\begin{IEEEkeywords}
+    Motion and Path Planning, Optimization and Optimal Control, Computational Geometry, Underactuated Robots, Motion Control, 
+\end{IEEEkeywords}
+
 \section{INTRODUCTION}
 
-    Many robotic systems---including quadrotors, airplanes, satellites, autonomous
+    \IEEEPARstart{M}{any} robotic systems---including quadrotors, airplanes, satellites, autonomous
     underwater vehicles, and quadrupeds---can perform arbitrarily large three-dimensional
     translations and rotations as part of their normal operation. While representing
     translations is straightforward and intuitive, effectively representing the
