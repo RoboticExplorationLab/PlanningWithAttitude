@@ -357,7 +357,7 @@ involving significant changes in attitude.
         product rule, again evaluated at $\phi = 0$:
 
 	    \begin{equation} \label{eq:quat_hessian}
-            \nabla^2 h(q) = G(q)^T \pdv[2]{h}{q} G(q) + I_3 \pdv{h}{q}q,
+            \nabla^2 h(q) = G(q)^T \pdv[2]{h}{q} G(q) - I_3 \pdv{h}{q}q,
 	    \end{equation}
 	    where the second term comes from the second derivative of $\varphi(\phi)$.
 	    Similar to $G(q)$, this expression is the same (up to a constant scalar factor) for any
@@ -517,7 +517,7 @@ involving significant changes in attitude.
             B_k = E(\bar{x}_{k+1})^T \pdv{f}{u}|_{\bar{x}_k,\bar{u}_k},
         \end{aligned}
     \end{equation}
-    and $E(x_k) \in \R^{12 \times 13}$ is the error-state Jacobian:
+    and $E(x_k) \in \R^{13 \times 12}$ is the error-state Jacobian:
     \begin{equation} \label{eq:state_error_jacobian}
         E(x) = \begin{bmatrix}
             I_3 & & & \\
@@ -580,8 +580,8 @@ involving significant changes in attitude.
         \end{equation}
         Its gradient and Hessian are,
         \begin{align}
-            \nabla J_\text{geo} &= \sign(q_d^T q) q_g^T G(q) \\
-            \nabla^2 J_\text{geo} &= \sign(q_d^T q) I_3 q_g^T q ,
+            \nabla J_\text{geo} &= -\sign(q_g^T q) q_g^T G(q) \\
+            \nabla^2 J_\text{geo} &= \sign(q_g^T q) I_3 q_g^T q ,
         \end{align}
         where $\sign$ denotes the signum function. \added{This cost function is particularly
         useful for rotations since it eliminates the ambiguity arising from the quaternion 
