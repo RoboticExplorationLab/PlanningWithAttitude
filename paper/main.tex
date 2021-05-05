@@ -7,7 +7,7 @@
 
 
 % Bibliography
-\usepackage{biblatex}
+\usepackage[style=ieee]{biblatex}
 \addbibresource{references.bib}
 
 % Math
@@ -84,7 +84,7 @@ Planning with Attitude
 \thanks{This paper was recommended for publication by Editor Nancy Amato upon evaluation of the Associate Editor and Reviewers' comments.
 This work was supported by a NASA Early Career Faculty Award, NASA JPL, and NSF GFRP Grant No. DGE-1656518.} %Use only for final RAL version
 \thanks{$^{1}$All authors are with the Robotics Institute, Carnegie Mellon University, Pittsburgh, PA, USA 
-        {\tt\footnotesize brian.jackson@cmu.edu}}%
+        {\tt\footnotesize brianjackson@cmu.edu}}%
 \thanks{Digital Object Identifier (DOI): see top of this page.}
 }
 
@@ -428,7 +428,7 @@ involving significant changes in attitude.
     Given a guess solution, $q_k$, The standard Gauss-Newton method can then be used to compute a three-parameter update, $\phi_k$ via the Moore-Penrose psuedoinverse:
 
     \begin{equation}
-    	\phi_k = ({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k).
+    	\phi_k = -({\nabla r}^T {\nabla r})^{-1} {\nabla r}^T r(q_k).
     \end{equation}
 	The update is then applied using the composition for the group:
 	\begin{equation}
@@ -532,7 +532,7 @@ involving significant changes in attitude.
     function:
     \begin{multline}
         \delta \ell(x,u) \approx  \half \delta x^T \ell_{xx} \delta x
-            + \half \delta u^T \ell_{uu} \delta u + \delta_u^T \ell_{ux} \delta u \\
+            + \half \delta u^T \ell_{uu} \delta u + \delta_u^T \ell_{ux} \delta x \\
             + \ell_x^T \delta x^T + \ell_u^T \delta u.
     \end{multline}
     % \todo{I think you can safely leave out any references to the augmented Lagrangian,
